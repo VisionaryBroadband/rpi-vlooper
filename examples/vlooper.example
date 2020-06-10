@@ -1,0 +1,67 @@
+#!/bin/bash
+source inc/main.cfg
+
+#Start displaying the video loop
+case "$1" in start)
+    if [[ -n $omxPid ]]
+        then
+            printf "\n$timeStamp - Video Playback already running!\n" >> $log
+        else
+            if [[ -s $videoFile ]]
+            then
+                screen -dmS vlooper sh -c "omxplayer -o both $videoFile -b --loop --no-osd"
+                printf "\n$timeStamp - Video Playback Started...\n" >> $log
+            else
+                printf "\n$timeStamp - $videoFile doesn't exist or is zero length, video playback not started!\n" >> $log
+            fi
+    fi
+;;
+
+#Stop playing video loop
+stop)
+    if ! sudo killall omxplayer.bin
+        then
+            printf "\n$timeStamp - Failed to stop Video Playback!\n" >> $log
+        else
+            printf "\n$timeStamp - Video Playback Stopped...\n" >> $log
+    fi
+;;
+
+#Restart video loop if it died
+restart)
+if [[ -n $omxPid ]]
+    then 
+        if [ "$EUID" -ne 0 ]
+        then
+            sudo killall omxplayer.bin
+        else
+            killall omxplayer.bin
+        fi
+        if [[ -s $videoFile ]]
+            then
+            screen -dmS vlooper sh -c "omxplayer -o local $videoFile -b --loop --no-osd"
+            printf "\n$timeStamp - Video Playback Restarted...\n" >> $log
+            else
+            printf "\n$videoFile doesn't exist or is zero length, video playback not started!\n" >> $log
+        fi
+    else
+        if [[ -s $videoFile ]]
+            then
+            screen -dmS vlooper sh -c "omxplayer -o local $videoFile -b --loop --no-osd"
+            printf "\n$timeStamp - Video Playback started...\n" >> $log
+            else
+            printf "\n$timeStamp - $videoFile doesn't exist or is zero length, video playback not started!\n" >> $log
+        fi
+fi
+;;
+
+*)
+
+echo "Usage: videoloop {start|stop|restart}"
+
+exit 1
+
+;;
+esac
+
+exit 0

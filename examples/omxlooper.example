@@ -1,0 +1,14 @@
+[Unit]
+Description=OMX Looper
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/vlooper_boot
+WorkingDirectory=
+StandardOutput=syslog
+StandardError=syslog
+User=root
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,52 @@
+# Global variables go here
+# This file should be included in vupdate.sh and vlooper.sh
+log=/var/log/vlogger.log
+timeStamp=$(date +"%Y-%m-%d %T")
+
+# Installation user
+# - Specify the user that owns all of the vlooper files
+# fileOwner=
+
+# Installation path
+# - Specify the full filepath to the vlooper folder
+# baseDir=
+
+# New incoming video
+# - Specify the name of the uploaded video in the network path that you wish to start looping
+newVideo="announcements.mp4"
+
+# Current video
+# - Specify the name of the currently looped video in the media path that you wish to archive
+curVideo="announcement.mp4"
+
+# Media path
+# - Specify the full filepath to the folder containing the video you wish to have looped
+videoDir="$baseDir/video"
+
+# Video file
+# - Used to tell what video file omxplayer should use
+videoFile="$videoDir/$curVideo"
+
+# Network
+# - Specify your current network
+localNet=$(ip route show | grep default | awk '{print $3}' | sed -re 's/\.[0-9]*$//g')
+
+# Network mount
+# - Specify the first three octets of the network to see if the SMB Network share is mounted or not
+smbResult=$(sudo mount -ls | grep "$localNet")
+
+# Network path
+# - Specify the full filepath to the folder the videos are uploaded to
+remoteDir="/mnt/tvMedia"
+
+# Archive path
+# - Specify the full filepath to the folder you wish the old videos to be archived to
+archiveDir="$remoteDir/archives"
+
+# Archive filename
+# - Specify the name you wish to entitle the archived video
+archName="$timeStamp-$curVideo"
+
+# OmxPlayer search
+#  - Used to see if omxplayer is running or not
+omxPid=$(pgrep -f "omxplayer.bin")
