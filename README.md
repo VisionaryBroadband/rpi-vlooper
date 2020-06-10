@@ -11,8 +11,8 @@ This is where this repo comes into play. This will install all the necessary fil
 
 ## Installation instructions
 1. `cd ~`
-2. `git clone https://github.com/captainfodder/rpi-looped-display.git`
-3. `cd ~/rpi-looped-display`
+2. `git clone https://github.com/captainfodder/rpi-vlooper.git`
+3. `cd ~/rpi-vlooper`
 4. `chmod +x installer.sh`
 5. `./installer.sh`
 
