@@ -1,0 +1,10 @@
+/var/log/vlooper.log {
+	weekly
+	missingok
+	create 660
+	rotate 8
+	compress
+	delaycompress
+	dateext
+	dateformat %Y-%m-%d-%s
+}

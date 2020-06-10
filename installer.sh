@@ -92,6 +92,18 @@ if ! mv ./examples/main.temp ./examples/main.example > /dev/null 2>&1
         exit 1
 fi
 
+# Update the vlogroate conf file for usage
+if ! sed -e "s,create 660,create 660 $USER $USER,g" ./examples/vlogrotate.example > ./examples/vlogrotate.temp
+    then
+        echo "Failed to build vlogroate configuration file, aborting installation!"
+        exit 1
+fi
+if ! mv ./examples/vlogrotate.temp ./examples/vlogrotate.example > /dev/null 2>&1
+    then
+        echo "Failed to build vlogroate configuration file, aborting installation!"
+        exit 1
+fi
+
 # Create all the directories for the script to be installed in
 echo "Creating directories..."
 if ! mkdir ~/vlooper > /dev/null 2>&1
@@ -131,6 +143,11 @@ if ! cp ./examples/vlooper.example ~/vlooper/vlooper.sh && chmod +x ~/vlooper/vl
         echo "Failed to install vlooper script and make executable"
         exit 1
 fi
+if ! cp ./examples/vlooper_boot.example ~/vlooper/vlooper_boot.sh && chmod +x ~/vlooper/vlooper_boot.sh
+    then
+        echo "Failed to install vlooper_boot script and make executable"
+        exit 1
+fi
 if ! cp ./examples/vupdate.example ~/vlooper/vupdate.sh && chmod +x ~/vlooper/vupdate.sh
     then
         echo "Failed to install vupdate script and make executable"
@@ -139,6 +156,11 @@ fi
 if ! cp ./examples/main.example ~/vlooper/inc/main.cfg && chmod +x ~/vlooper/inc/main.cfg
     then
         echo "Failed to install configuration file and make executable"
+        exit 1
+fi
+if ! cp ./examples/annoucement.mp4 ~/vlooper/video/annoucement.mp4
+    then
+        echo "Failed to install demo video file"
         exit 1
 fi
 if [ "$EUID" -ne 0 ]
@@ -152,6 +174,11 @@ if [ "$EUID" -ne 0 ]
             then
                 echo "Failed to create /var/log/vlooper.log"
                 exit 1
+            else
+                if ! echo "$sudoPW" | sudo -S -k chown $USER:$USER /var/log/vlooper.log /dev/null 2>&1
+                    then
+                        echo "Failed to update ownerships of /var/log/vlooper.log, please run: sudo chown $USER:$USER /var/log/vlooper.log"
+                fi
         fi
         if ! echo "$sudoPW" | sudo -S -k cp ./examples/omxlooper.example /etc/systemd/system/omxlooper.service > /dev/null 2>&1
             then
