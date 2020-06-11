@@ -324,7 +324,7 @@ if [ "$EUID" -ne 0 ]
                 echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/local/bin/vlooper"
         fi
         echo "Creating superuser symbolic link to vloop_boot script..."
-        if ! echo "$sudoPW" | sudo -S -k ln -s "$HOME/vlooper/vlooper_boot.sh" /usr/local/bsin/vlooper_boot
+        if ! echo "$sudoPW" | sudo -S -k ln -s "$HOME/vlooper/vlooper_boot.sh" /usr/local/sbin/vlooper_boot
             then
                 echo "Failed to create vlooper superuser symlink, this is necessary in order for the omxlooper service to run on boot!"
                 echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/local/bin/vlooper"
