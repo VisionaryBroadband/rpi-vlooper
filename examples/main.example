@@ -33,6 +33,8 @@ localNet=$(ip route show | grep default | awk '{print $3}' | sed -re 's/\.[0-9]*
 
 # Network mount
 # - Specify the first three octets of the network to see if the SMB Network share is mounted or not
+# - Set smbResult to true if you are not using a remote file share like SMB or NFS
+#smbResult="true"
 smbResult=$(sudo mount -ls | grep "$localNet")
 
 # Network path

@@ -5,9 +5,13 @@ This is where this repo comes into play. This will install all the necessary fil
 
 ## System Requirements
 * Raspberry Pi
-* Reasberry OS (aka Raspbian)
+* Raspberry OS (aka Raspbian)
 * 4GB+ microSD card
 * Display to connect to the raspberry pi (via direct HDMI preferred for audio to work)
+* The following software packages will be installed via the install script:
+  * (required) `omxplayer`
+  * (optional) `cifs-utils`
+  * (optional) `nfs-common`
 
 ## Installation instructions
 1. `cd ~`
@@ -15,5 +19,11 @@ This is where this repo comes into play. This will install all the necessary fil
 3. `cd ~/rpi-vlooper`
 4. `chmod +x installer.sh`
 5. `./installer.sh`
+
+## Other notes
+* If you are not using SMB or NFS to get new videos automatically, then you will need to manually setup your method of uploading videos to your rasberry pi.
+  * Such as, you might sftp or scp the files onto the pi via Filezilla or CLI.
+  * You could also plug in removable media and manually the copy the files onto the rasberry pi.
+  > The files will need to be put into the `/mnt/tvMedia` folder, and named whatever you chose for the `$newVideo` file name (see /inc/main.cfg)
 
 Thank you for using this repository, if you like it feel free to fork it and adapt it to your own needs!

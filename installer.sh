@@ -45,43 +45,66 @@ if [ "$distroCheck" != "Raspbian" ]
         fi
 fi
 
-# Check for dependencies and ask to install them if unmet
-pkgInstalled=$(dpkg --get-selections | grep "omxplayer" | awk '{print $1}')
-if [[ -z $pkgInstalled ]]
+# Prompt user how they want to import their new videos to the vlooper service
+read -rp "Would you like to retrieve your new videos from a remote file share such as SMB or NFS [y/N]?" mediaMethod
+if [[ "$mediaMethod" = "y" ]]
     then
-        read -rp "omxplayer not installed, install [y/N]?" installOMX
-        if [ "$installOMX" = "y" ]
-            then
-                echo "Installing omxplayer..."
-                if [ "$EUID" -ne 0 ]
-                    then
-                        if ! echo "$sudoPW" | sudo -S -k apt install omxplayer -y > /dev/null 2>&1
-                            then
-                                echo "Failed to install omxplayer! Aborting installation..."
-                                exit 1
-                            else
-                                echo "Installed omxplayer!"
-                        fi
-                    else
-                        if ! apt install omxplayer -y > /dev/null 2>&1
-                            then
-                                echo "Failed to install omxplayer! Aborting installation..."
-                                exit 1
-                            else
-                                echo "Installed omxplayer!"
-                        fi
-                fi
-            else
-                echo "Not installing omxplayer, aborting installation"
-                exit 1
-        fi
+        read -rp "Would you like to use SMB or NFS [smb/nfs]?" remoteMethod
     else
-        echo "Dependencies met! Installing Video Looper now..."
+        echo "In order to play new videos automatically, you will need to upload them into this folder: /mnt/tvMedia"
 fi
+
+# Check for dependencies and ask to install them if unmet
+echo "Checking dependencies..."
+declare -a packages=("omxplayer")
+if [[ "$mediaMethod" = "y" ]]
+    then
+        if [[ "$remoteMethod" = "smb" ]]
+            then
+                packages+=("cifs-utils")
+            else
+                packages+=("nfs-common")
+        fi
+fi
+for package in "${packages[@]}"; do
+    pkgInstalled=$(dpkg --get-selections | grep "$package" | awk '{print $1}')
+    if [[ -z $pkgInstalled ]]
+        then
+            read -rp "$package not installed, install [y/N]?" doInstall
+            if [[ "$doInstall" = "y" ]]
+                then
+                    echo "Installing $package..."
+                    if [ "$EUID" -ne 0 ]
+                        then
+                            if ! echo "$sudoPW" | sudo -S -k apt install "$package" -y > /dev/null 2>&1
+                                then
+                                    echo "Failed to install $package! Aborting installation..."
+                                    exit 1
+                                else
+                                    echo "Installed $package!"
+                            fi
+                        else
+                            if ! apt install "$package" -y > /dev/null 2>&1
+                                then
+                                    echo "Failed to install $package! Aborting installation..."
+                                    exit 1
+                                else
+                                    echo "Installed $package!"
+                            fi
+                    fi
+                else
+                    echo "Not installing $package, aborting installation"
+                    exit 1
+            fi
+    fi
+done
+echo "Dependencies met! Installing Video Looper now..."
 
 # Update the main.cfg file for usage
 echo "Building configuration file..."
-if ! sed -e "s,# fileOwner=,fileOwner=$USER,ig" -e "s,# baseDir=,baseDir=$HOME/vlooper,g" ./examples/main.example > ./examples/main.temp
+read -rp "What file name will your new videos be titled (ex. announcements.mp4)?" newFile
+read -rp "What file name will your playing video be titled (ex. annoucement.mp4)?" playFile
+if ! sed -e "s,# fileOwner=,fileOwner=$USER,ig" -e "s,# baseDir=,baseDir=$HOME/vlooper,ig" -e "s,newVideo=\"announcements.mp4\",newVideo=\"$newFile\",ig" -e "s,curVideo=\"announcement.mp4\",curVideo=\"$playFile\",g" ./examples/main.example > ./examples/main.temp
     then
         echo "Failed to build configuration file, aborting installation!"
         exit 1
@@ -123,15 +146,105 @@ if ! mkdir ~/vlooper/inc > /dev/null 2>&1
 fi
 if [ "$EUID" -ne 0 ]
     then
-        if ! echo "$sudoPW" | sudo -S -k mkdir /mnt/tvMedia > /dev/null 2>&1
+        if ! echo "$sudoPW" | sudo -S -k mkdir /mnt/tvMedia 2>&1
             then
-                echo "Failed to create /mnt/tvMedia"
+                echo "Failed to create /mnt/tvMedia for remoteFS mount, aborting installation!"
                 exit 1
         fi
     else
-        if ! mkdir /mnt/tvMedia > /dev/null 2>&1
+        if ! mkdir /mnt/tvMedia 2>&1
             then
-                echo "Failed to create /mnt/tvMedia"
+                echo "Failed to create /mnt/tvMedia for remoteFS mount, aborting installation!"
+                exit 1
+        fi
+fi
+
+# Setup the users desired remote media method
+# Check if the user wants to connect to a remote FS such as SMB or NFS
+if [[ "$mediaMethod" = "y" ]]
+    then
+        # Check if the user wants to use SMB or NFS
+        if [[ "$remoteMethod" = "smb" ]]
+            then
+                read -rp "What is the filepath for the SMB share you wish to mount (Ex. //192.168.0.1/TvMedia)?" smbShare
+                read -rp "What username should be used to connect to the SMB Share (leave blank for none)?" smbUser
+                if [[ -n "$smbUser" ]]
+                    then
+                        read -rp "What password should be used to connect to the SMB Share?" smbPass
+                        read -rp "What domain should be used to connect to the SMB Share (leave blank for none)?" smbDomain
+                        # Create the SMB credential file
+                        if ! touch ~/.smb 2>&1
+                            then
+                                echo "Failed to create SMB credential file, aborting installation!"
+                                exit 1
+                        fi
+                        # Setup SMB credential file permissions
+                        if ! chmod 600 ~/.smb 2>&1
+                            then
+                                echo "Failed to secure SMB credential file, please secure manually with: chmod 600 ~/.smb"
+                        fi
+                        # Setup the SMB credential file
+                        if ! echo "user=$smbUser" >> ~/.smb
+                            then
+                                echo "Failed to set SMB User, please manually set it with: nano ~/.smb"
+                        fi
+                        if ! echo "password=$smbPass" >> ~/.smb
+                            then
+                                echo "Failed to set SMB Password, please manually set it with: nano ~/.smb"
+                        fi
+                        if [[ -n "$smbDomain" ]]
+                            then
+                                if ! echo "domain=$smbDomain" >> ~/.smb
+                                    then
+                                        echo "Failed to set SMB Domain, please manually set it with: nano ~/.smb"
+                                fi
+                        fi
+                fi
+                # Setup the SMB connection
+                if [[ -n "$smbUser" ]]
+                    then
+                        if ! echo "$sudoPW" | sudo -S -k tee -a "$smbShare    /mnt/tvMedia  cifs    uid=$USER,gid=$USER,credentials=$HOME/.smb,iocharset=utf8,rw 0 0" 2>&1
+                            then
+                                echo "Failed to add SMB Mount to /etc/fstab"
+                                exit 1
+                        fi
+                    else
+                        if ! echo "$sudoPW" | sudo -S -k tee -a "$smbShare    /mnt/tvMedia  cifs    uid=$USER,gid=$USER,iocharset=utf8,rw 0 0" 2>&1
+                            then
+                                echo "Failed to add SMB Mount to /etc/fstab"
+                                exit 1
+                        fi
+                fi
+            else
+                # Setup the NFS connection
+                read -rp "What is the filepath for the NFS share you wish to mount (Ex. 192.168.0.1:/TvMedia)?" nfsShare
+                read -rp "What username should be used to connect to the NFS Share (leave blank for none)?" nfsUser
+                if [[ -n "$nfsUser" ]]
+                    then
+                        read -rp "What password should be used to connect to the NFS Share?" nfsPass
+                        if ! echo "$sudoPW" | sudo -S -k tee -a "$nfsShare    /mnt/tvMedia  nfs    username=$nfsUser,password=$nfsPass,rw,noexec,nosuid 0 0" 2>&1
+                            then
+                                echo "Failed to add NFS Mount to /etc/fstab"
+                                exit 1
+                        fi
+                    else
+                        if ! echo "$sudoPW" | sudo -S -k tee -a "$nfsShare    /mnt/tvMedia  nfs    rw,noexec,nosuid 0 0" 2>&1
+                            then
+                                echo "Failed to add NFS Mount to /etc/fstab"
+                                exit 1
+                        fi
+                fi
+        fi
+    else
+        # Update main.cfg to comment network var, and set it to true to pass future checks.
+        if ! sed -e "s,#smbResult=\"true\",smbResult=\"true\",ig" -e "s,smbResult=\$(,#smbResult=\$(,g" ./examples/main.example > ./examples/main.temp
+            then
+                echo "Failed to update main.cfg with network parameters, aborting installation!"
+                exit 1
+        fi
+        if ! mv ./examples/main.temp ./examples/main.example > /dev/null 2>&1
+            then
+                echo "Failed to update main.cfg with network parameters, aborting installation!"
                 exit 1
         fi
 fi
@@ -175,7 +288,7 @@ if [ "$EUID" -ne 0 ]
                 echo "Failed to create /var/log/vlooper.log"
                 exit 1
             else
-                if ! echo "$sudoPW" | sudo -S -k chown $USER:$USER /var/log/vlooper.log /dev/null 2>&1
+                if ! echo "$sudoPW" | sudo -S -k chown "$USER":"$USER" /var/log/vlooper.log /dev/null 2>&1
                     then
                         echo "Failed to update ownerships of /var/log/vlooper.log, please run: sudo chown $USER:$USER /var/log/vlooper.log"
                 fi
