@@ -270,10 +270,21 @@ if ! cp ./examples/announcement.mp4 "$HOME/vlooper/video/$playFile"
 fi
 if [ "$EUID" -ne 0 ]
     then
-        if ! echo "$sudoPW" | sudo -S -k cp ./examples/vlooper_boot.example /usr/local/bin/vlooper_boot.sh && chmod +x /usr/local/bin/vlooper_boot.sh
+        if ! echo "$sudoPW" | sudo -S -k sed -i'' -e "s,source inc/main.cfg,source $HOME/vlooper/inc/main.cfg,g" ./examples/vlooper_boot.example
+            then
+                echo "Failed to update main.cfg path in vlooper_boot script"
+                exit 1
+        fi
+        if ! echo "$sudoPW" | sudo -S -k cp ./examples/vlooper_boot.example /usr/local/bin/vlooper_boot.sh
             then
                 echo "Failed to install vlooper_boot script and make executable"
                 exit 1
+            else
+                if ! echo "$sudoPW" | sudo -S -k chmod +x /usr/local/bin/vlooper_boot.sh
+                    then
+                        echo "Failed to make vlooper_boot script executable"
+                        exit 1
+                fi
         fi
         if ! echo "$sudoPW" | sudo -S -k cp ./examples/vlogrotate.example /etc/logrotate.d/vlooper
             then
@@ -291,10 +302,21 @@ if [ "$EUID" -ne 0 ]
                 fi
         fi
     else
-        if ! cp ./examples/vlooper_boot.example /usr/local/sbin/vlooper_boot.sh && chmod +x /usr/local/sbin/vlooper_boot.sh
+        if ! echo "$sudoPW" | sudo -S -k sed -i'' -e "s,source inc/main.cfg,source $HOME/vlooper/inc/main.cfg,g" ./examples/vlooper_boot.example
+            then
+                echo "Failed to update main.cfg path in vlooper_boot script"
+                exit 1
+        fi
+        if ! cp ./examples/vlooper_boot.example /usr/local/sbin/vlooper_boot.sh
             then
                 echo "Failed to install vlooper_boot script and make executable"
                 exit 1
+            else
+                if ! echo "$sudoPW" | sudo -S -k chmod +x /usr/local/bin/vlooper_boot.sh
+                    then
+                        echo "Failed to make vlooper_boot script executable"
+                        exit 1
+                fi
         fi
         if ! cp ./examples/vlogrotate.example /etc/logrotate.d/vlooper
             then
@@ -318,12 +340,6 @@ if [ "$EUID" -ne 0 ]
         fi
         echo "Creating symbolic link to vlooper script... You can invoke this script simply be typing: vlooper {start|stop|restart}"
         if ! echo "$sudoPW" | sudo -S -k ln -s "$HOME/vlooper/vlooper.sh" /usr/local/bin/vlooper
-            then
-                echo "Failed to create vlooper symlink, this is necessary in order for the omxlooper service to run on boot!"
-                echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/local/bin/vlooper"
-        fi
-        echo "Creating symbolic link to vloop_boot script..."
-        if ! echo "$sudoPW" | sudo -S -k ln -s "$HOME/vlooper/vlooper_boot.sh" /usr/local/bin/vlooper_boot
             then
                 echo "Failed to create vlooper symlink, this is necessary in order for the omxlooper service to run on boot!"
                 echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/local/bin/vlooper"
