@@ -130,7 +130,12 @@ fi
 
 # Create all the directories for the script to be installed in
 echo "Creating directories..."
-if ! mkdir -p ~/vlooper{inc,video} > /dev/null 2>&1
+if ! mkdir -p ~/vlooper/inc
+    then
+        echo "Failed to create directories"
+        exit 1
+fi
+if ! mkdir -p ~/vlooper/video
     then
         echo "Failed to create directories"
         exit 1
@@ -257,7 +262,7 @@ if ! cp ./examples/main.example ~/vlooper/inc/main.cfg && chmod +x ~/vlooper/inc
         echo "Failed to install configuration file and make executable"
         exit 1
 fi
-if ! cp ./examples/annoucement.mp4 ~/vlooper/video/annoucement.mp4
+if ! cp ./examples/announcement.mp4 "$HOME/vlooper/video/$playFile"
     then
         echo "Failed to install demo video file"
         exit 1
@@ -303,22 +308,43 @@ if [ "$EUID" -ne 0 ]
 fi
 
 # Make symlink to vupdate script
-echo "Creating symbolic link to vupdate script... You can invoke this script simply be typing: vupdate"
-if ! ln -s ~/vlooper/vupdate.sh /usr/bin/vupdate
+if [ "$EUID" -ne 0 ]
     then
-        echo "Failed to create vupdate symlink, you can optionally create this if you choose so"
-    fi
-echo "Creating symbolic link to vlooper script... You can invoke this script simply be typing: vlooper {start|stop|restart}"
-if ! ln -s ~/vlooper/vlooper.sh /usr/bin/vlooper
-    then
-        echo "Failed to create vlooper symlink, this is necessary in order for the omxlooper service to run on boot!"
-        echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/bin/vlooper"
-fi
-echo "Creating symbolic link to vloop_boot script..."
-if ! ln -s ~/vlooper/vlooper_boot.sh /usr/bin/vlooper_boot
-    then
-        echo "Failed to create vlooper symlink, this is necessary in order for the omxlooper service to run on boot!"
-        echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/bin/vlooper"
+        echo "Creating symbolic link to vupdate script... You can invoke this script simply be typing: vupdate"
+        if ! echo "$sudoPW" | sudo -S -k ln -s "$HOME/vlooper/vupdate.sh" /usr/bin/vupdate
+            then
+                echo "Failed to create vupdate symlink, you can optionally create this if you choose so"
+            fi
+        echo "Creating symbolic link to vlooper script... You can invoke this script simply be typing: vlooper {start|stop|restart}"
+        if ! echo "$sudoPW" | sudo -S -k ln -s "$HOME/vlooper/vlooper.sh" /usr/bin/vlooper
+            then
+                echo "Failed to create vlooper symlink, this is necessary in order for the omxlooper service to run on boot!"
+                echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/bin/vlooper"
+        fi
+        echo "Creating symbolic link to vloop_boot script..."
+        if ! echo "$sudoPW" | sudo -S -k ln -s "$HOME/vlooper/vlooper_boot.sh" /usr/bin/vlooper_boot
+            then
+                echo "Failed to create vlooper symlink, this is necessary in order for the omxlooper service to run on boot!"
+                echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/bin/vlooper"
+        fi
+    else
+        echo "Creating symbolic link to vupdate script... You can invoke this script simply be typing: vupdate"
+        if ! ln -s ~/vlooper/vupdate.sh /usr/bin/vupdate
+            then
+                echo "Failed to create vupdate symlink, you can optionally create this if you choose so"
+            fi
+        echo "Creating symbolic link to vlooper script... You can invoke this script simply be typing: vlooper {start|stop|restart}"
+        if ! ln -s ~/vlooper/vlooper.sh /usr/bin/vlooper
+            then
+                echo "Failed to create vlooper symlink, this is necessary in order for the omxlooper service to run on boot!"
+                echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/bin/vlooper"
+        fi
+        echo "Creating symbolic link to vloop_boot script..."
+        if ! ln -s ~/vlooper/vlooper_boot.sh /usr/bin/vlooper_boot
+            then
+                echo "Failed to create vlooper symlink, this is necessary in order for the omxlooper service to run on boot!"
+                echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/bin/vlooper"
+        fi
 fi
 
 # Setup crontab
