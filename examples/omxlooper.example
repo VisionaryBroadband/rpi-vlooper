@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/vlooper_boot
+ExecStart=
 WorkingDirectory=
 StandardOutput=syslog
 StandardError=syslog

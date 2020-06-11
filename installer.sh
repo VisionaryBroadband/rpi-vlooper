@@ -362,13 +362,13 @@ fi
 
 # Setup omxLooper service so the video loop starts on boot and stays alive
 echo "Installing omxLooper service..."
-if ! sed -i'' -e "s,WorkingDirectory=,WorkingDirectory=$HOME/vlooper,ig" -e "s,User=,User=$USER,g" ./examples/omxlooper.example
-    then
-        echo "Failed to build omxLooper service file, aborting installation!"
-        exit 1
-fi
 if [ "$EUID" -ne 0 ]
     then
+        if ! sed -i'' -e "s,WorkingDirectory=,WorkingDirectory=$HOME/vlooper,ig" -e "s,User=,User=$USER,ig" -e "s,ExecStart=,ExecStart=/usr/local/bin/vlooper_boot,g" ./examples/omxlooper.example
+            then
+                echo "Failed to build omxLooper service file, aborting installation!"
+                exit 1
+        fi
         if ! echo "$sudoPW" | sudo -S -k cp ./examples/omxlooper.example /etc/systemd/system/omxlooper.service
             then
                 echo "Failed to install omxlooper as a service, this is important if you want the video to loop automatically on boot after powerloss"
@@ -389,6 +389,11 @@ if [ "$EUID" -ne 0 ]
                 echo "Enabled omxlooper service"
         fi
     else
+        if ! sed -i'' -e "s,WorkingDirectory=,WorkingDirectory=$HOME/vlooper,ig" -e "s,User=,User=$USER,ig" -e "s,ExecStart=,ExecStart=/usr/local/sbin/vlooper_boot,g" ./examples/omxlooper.example
+            then
+                echo "Failed to build omxLooper service file, aborting installation!"
+                exit 1
+        fi
         if ! cp ./examples/omxlooper.example /etc/systemd/system/omxlooper.service
             then
                 echo "Failed to install omxlooper as a service, this is important if you want the video to loop automatically on boot after powerloss"
