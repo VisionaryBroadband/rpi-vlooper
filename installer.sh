@@ -375,7 +375,7 @@ fi
 echo "Installing omxLooper service..."
 if [ "$EUID" -ne 0 ]
     then
-        if ! sed -i'' -e "s,WorkingDirectory=,WorkingDirectory=$HOME/vlooper,ig" -e "s,User=,User=$USER,ig" -e "s,ExecStart=,ExecStart=/usr/local/bin/vlooper_boot,g" ./examples/omxlooper.example
+        if ! sed -i'' -e "s,WorkingDirectory=,WorkingDirectory=$HOME/vlooper,ig" -e "s,User=,User=$USER,ig" -e "s,ExecStart=,ExecStart=/usr/local/bin/vlooper_boot.sh,g" ./examples/omxlooper.example
             then
                 echo "Failed to build omxLooper service file, aborting installation!"
                 exit 1
@@ -408,7 +408,7 @@ if [ "$EUID" -ne 0 ]
                 echo "Enabled omxlooper service"
         fi
     else
-        if ! sed -i'' -e "s,WorkingDirectory=,WorkingDirectory=$HOME/vlooper,ig" -e "s,User=,User=$USER,ig" -e "s,ExecStart=,ExecStart=/usr/local/sbin/vlooper_boot,g" ./examples/omxlooper.example
+        if ! sed -i'' -e "s,WorkingDirectory=,WorkingDirectory=$HOME/vlooper,ig" -e "s,User=,User=$USER,ig" -e "s,ExecStart=,ExecStart=/usr/local/sbin/vlooper_boot.sh,g" ./examples/omxlooper.example
             then
                 echo "Failed to build omxLooper service file, aborting installation!"
                 exit 1
