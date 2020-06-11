@@ -231,6 +231,12 @@ if [[ "$mediaMethod" = "y" ]]
                         fi
                 fi
         fi
+        # Mount the remote file share
+        if ! echo "$sudoPW" | sudo -S -k mount -a
+            then
+                echo "Failed to mount the remote file share, please check /etc/fstab for errors!"
+                exit 1
+        fi
     else
         # Update main.cfg to comment network var, and set it to true to pass future checks.
         if ! sed -i'' -e "s,#smbResult=\"true\",smbResult=\"true\",ig" -e "s,smbResult=\$(,#smbResult=\$(,g" ./examples/main.example
