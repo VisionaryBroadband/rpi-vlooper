@@ -45,6 +45,17 @@ if [ "$distroCheck" != "Raspbian" ]
         fi
 fi
 
+# Setup passwordless sudo for killall & tee so that vlooper can start/stop omxplayer w/o needing a sudo password everytime
+## First check if this is being installed as root or not
+if [ "$EUID" -ne 0 ]
+    then
+        echo "Setting up sudo exemption for vlooper script to stop services"
+        touch ./examples/vlooper-exception
+        echo "$USER ALL=(ALL) NOPASSWD: /usr/bin/killall,/usr/bin/tee" > ./examples/vlooper-exception
+        echo "$sudoPW" | sudo -S -k chown root:root ./examples/vlooper-exception
+        echo "$sudoPW" | sudo -S -k mv ./examples/vlooper-exception /etc/sudoers.d/
+fi
+
 # Prompt user how they want to import their new videos to the vlooper service
 read -rp "Would you like to retrieve your new videos from a remote file share such as SMB or NFS [y/N]?" mediaMethod
 if [[ "$mediaMethod" = "y" ]]
@@ -104,24 +115,14 @@ echo "Dependencies met! Installing Video Looper now..."
 echo "Building configuration file..."
 read -rp "What file name will your new videos be titled (ex. announcements.mp4)?" newFile
 read -rp "What file name will your playing video be titled (ex. annoucement.mp4)?" playFile
-if ! sed -e "s,# fileOwner=,fileOwner=$USER,ig" -e "s,# baseDir=,baseDir=$HOME/vlooper,ig" -e "s,newVideo=\"announcements.mp4\",newVideo=\"$newFile\",ig" -e "s,curVideo=\"announcement.mp4\",curVideo=\"$playFile\",g" ./examples/main.example > ./examples/main.temp
-    then
-        echo "Failed to build configuration file, aborting installation!"
-        exit 1
-fi
-if ! mv ./examples/main.temp ./examples/main.example > /dev/null 2>&1
+if ! sed -i'' -e "s,# fileOwner=,fileOwner=$USER,ig" -e "s,# baseDir=,baseDir=$HOME/vlooper,ig" -e "s,newVideo=\"announcements.mp4\",newVideo=\"$newFile\",ig" -e "s,curVideo=\"announcement.mp4\",curVideo=\"$playFile\",g" ./examples/main.example
     then
         echo "Failed to build configuration file, aborting installation!"
         exit 1
 fi
 
 # Update the vlogroate conf file for usage
-if ! sed -e "s,create 660,create 660 $USER $USER,g" ./examples/vlogrotate.example > ./examples/vlogrotate.temp
-    then
-        echo "Failed to build vlogroate configuration file, aborting installation!"
-        exit 1
-fi
-if ! mv ./examples/vlogrotate.temp ./examples/vlogrotate.example > /dev/null 2>&1
+if ! sed -i'' -e "s,create 660,create 660 $USER $USER,g" ./examples/vlogrotate.example
     then
         echo "Failed to build vlogroate configuration file, aborting installation!"
         exit 1
@@ -129,30 +130,20 @@ fi
 
 # Create all the directories for the script to be installed in
 echo "Creating directories..."
-if ! mkdir ~/vlooper > /dev/null 2>&1
+if ! mkdir -p ~/vlooper{inc,video} > /dev/null 2>&1
     then
-        echo "Failed to create ~/vlooper"
-        exit 1
-fi
-if ! mkdir ~/vlooper/video > /dev/null 2>&1
-    then
-        echo "Failed to create ~/vlooper/video"
-        exit 1
-fi
-if ! mkdir ~/vlooper/inc > /dev/null 2>&1
-    then
-        echo "Failed to create ~/vlooper/inc"
+        echo "Failed to create directories"
         exit 1
 fi
 if [ "$EUID" -ne 0 ]
     then
-        if ! echo "$sudoPW" | sudo -S -k mkdir /mnt/tvMedia 2>&1
+        if ! echo "$sudoPW" | sudo -S -k mkdir -p /mnt/tvMedia 2>&1
             then
                 echo "Failed to create /mnt/tvMedia for remoteFS mount, aborting installation!"
                 exit 1
         fi
     else
-        if ! mkdir /mnt/tvMedia 2>&1
+        if ! mkdir -p /mnt/tvMedia 2>&1
             then
                 echo "Failed to create /mnt/tvMedia for remoteFS mount, aborting installation!"
                 exit 1
@@ -173,43 +164,43 @@ if [[ "$mediaMethod" = "y" ]]
                         read -rp "What password should be used to connect to the SMB Share?" smbPass
                         read -rp "What domain should be used to connect to the SMB Share (leave blank for none)?" smbDomain
                         # Create the SMB credential file
-                        if ! touch ~/.smb 2>&1
+                        if ! touch ~/.smbCreds 2>&1
                             then
                                 echo "Failed to create SMB credential file, aborting installation!"
                                 exit 1
                         fi
                         # Setup SMB credential file permissions
-                        if ! chmod 600 ~/.smb 2>&1
+                        if ! chmod 600 ~/.smbCreds 2>&1
                             then
-                                echo "Failed to secure SMB credential file, please secure manually with: chmod 600 ~/.smb"
+                                echo "Failed to secure SMB credential file, please secure manually with: chmod 600 ~/.smbCreds"
                         fi
                         # Setup the SMB credential file
-                        if ! echo "user=$smbUser" >> ~/.smb
+                        if ! echo "user=$smbUser" >> ~/.smbCreds
                             then
-                                echo "Failed to set SMB User, please manually set it with: nano ~/.smb"
+                                echo "Failed to set SMB User, please manually set 'user=$smbUser' with: nano ~/.smbCreds"
                         fi
-                        if ! echo "password=$smbPass" >> ~/.smb
+                        if ! echo "password=$smbPass" >> ~/.smbCreds
                             then
-                                echo "Failed to set SMB Password, please manually set it with: nano ~/.smb"
+                                echo "Failed to set SMB Password, please manually set 'password=$smbPass' with: nano ~/.smbCreds"
                         fi
                         if [[ -n "$smbDomain" ]]
                             then
-                                if ! echo "domain=$smbDomain" >> ~/.smb
+                                if ! echo "domain=$smbDomain" >> ~/.smbCreds
                                     then
-                                        echo "Failed to set SMB Domain, please manually set it with: nano ~/.smb"
+                                        echo "Failed to set SMB Domain, please manually set 'domain=$smbDomain' with: nano ~/.smbCreds"
                                 fi
                         fi
                 fi
                 # Setup the SMB connection
                 if [[ -n "$smbUser" ]]
                     then
-                        if ! echo "$sudoPW" | sudo -S -k tee -a "$smbShare    /mnt/tvMedia  cifs    uid=$USER,gid=$USER,credentials=$HOME/.smb,iocharset=utf8,rw 0 0" 2>&1
+                        if ! echo "$sudoPW" | sudo -S -k echo "$smbShare    /mnt/tvMedia  cifs    uid=$USER,gid=$USER,credentials=$HOME/.smbCreds,iocharset=utf8,rw 0 0" | sudo tee -a /etc/fstab > /dev/null 2>&1
                             then
                                 echo "Failed to add SMB Mount to /etc/fstab"
                                 exit 1
                         fi
                     else
-                        if ! echo "$sudoPW" | sudo -S -k tee -a "$smbShare    /mnt/tvMedia  cifs    uid=$USER,gid=$USER,iocharset=utf8,rw 0 0" 2>&1
+                        if ! echo "$sudoPW" | sudo -S -k echo "$smbShare    /mnt/tvMedia  cifs    uid=$USER,gid=$USER,iocharset=utf8,rw 0 0" | sudo tee -a /etc/fstab > /dev/null 2>&1
                             then
                                 echo "Failed to add SMB Mount to /etc/fstab"
                                 exit 1
@@ -222,13 +213,13 @@ if [[ "$mediaMethod" = "y" ]]
                 if [[ -n "$nfsUser" ]]
                     then
                         read -rp "What password should be used to connect to the NFS Share?" nfsPass
-                        if ! echo "$sudoPW" | sudo -S -k tee -a "$nfsShare    /mnt/tvMedia  nfs    username=$nfsUser,password=$nfsPass,rw,noexec,nosuid 0 0" 2>&1
+                        if ! echo "$sudoPW" | sudo -S -k echo "$nfsShare    /mnt/tvMedia  nfs    username=$nfsUser,password=$nfsPass,rw,noexec,nosuid 0 0" | sudo tee -a /etc/fstab > /dev/null /2>&1
                             then
                                 echo "Failed to add NFS Mount to /etc/fstab"
                                 exit 1
                         fi
                     else
-                        if ! echo "$sudoPW" | sudo -S -k tee -a "$nfsShare    /mnt/tvMedia  nfs    rw,noexec,nosuid 0 0" 2>&1
+                        if ! echo "$sudoPW" | sudo -S -k echo "$nfsShare    /mnt/tvMedia  nfs    rw,noexec,nosuid 0 0" | sudo tee -a /etc/fstab > /dev/null 2>&1
                             then
                                 echo "Failed to add NFS Mount to /etc/fstab"
                                 exit 1
@@ -237,12 +228,7 @@ if [[ "$mediaMethod" = "y" ]]
         fi
     else
         # Update main.cfg to comment network var, and set it to true to pass future checks.
-        if ! sed -e "s,#smbResult=\"true\",smbResult=\"true\",ig" -e "s,smbResult=\$(,#smbResult=\$(,g" ./examples/main.example > ./examples/main.temp
-            then
-                echo "Failed to update main.cfg with network parameters, aborting installation!"
-                exit 1
-        fi
-        if ! mv ./examples/main.temp ./examples/main.example > /dev/null 2>&1
+        if ! sed -i'' -e "s,#smbResult=\"true\",smbResult=\"true\",ig" -e "s,smbResult=\$(,#smbResult=\$(,g" ./examples/main.example
             then
                 echo "Failed to update main.cfg with network parameters, aborting installation!"
                 exit 1
@@ -278,38 +264,38 @@ if ! cp ./examples/annoucement.mp4 ~/vlooper/video/annoucement.mp4
 fi
 if [ "$EUID" -ne 0 ]
     then
-        if ! echo "$sudoPW" | sudo -S -k cp ./examples/vlogrotate.example /etc/logrotate.d/vlooper > /dev/null 2>&1
+        if ! echo "$sudoPW" | sudo -S -k cp ./examples/vlogrotate.example /etc/logrotate.d/vlooper
             then
                 echo "Failed to create /etc/logrotate.d/vlooper"
                 exit 1
         fi
-        if ! echo "$sudoPW" | sudo -S -k touch /var/log/vlooper.log > /dev/null 2>&1
+        if ! echo "$sudoPW" | sudo -S -k touch /var/log/vlooper.log
             then
                 echo "Failed to create /var/log/vlooper.log"
                 exit 1
             else
-                if ! echo "$sudoPW" | sudo -S -k chown "$USER":"$USER" /var/log/vlooper.log /dev/null 2>&1
+                if ! echo "$sudoPW" | sudo -S -k chown "$USER":"$USER" /var/log/vlooper.log
                     then
                         echo "Failed to update ownerships of /var/log/vlooper.log, please run: sudo chown $USER:$USER /var/log/vlooper.log"
                 fi
         fi
-        if ! echo "$sudoPW" | sudo -S -k cp ./examples/omxlooper.example /etc/systemd/system/omxlooper.service > /dev/null 2>&1
+        if ! echo "$sudoPW" | sudo -S -k cp ./examples/omxlooper.example /etc/systemd/system/omxlooper.service
             then
                 echo "Failed to install omxlooper service"
                 exit 1
         fi
     else
-        if ! cp ./examples/vlogrotate.example /etc/logrotate.d/vlooper > /dev/null 2>&1
+        if ! cp ./examples/vlogrotate.example /etc/logrotate.d/vlooper
             then
                 echo "Failed to create /etc/logrotate.d/vlooper"
                 exit 1
         fi
-        if ! touch /var/log/vlooper.log > /dev/null 2>&1
+        if ! touch /var/log/vlooper.log
             then
                 echo "Failed to create /var/log/vlooper.log"
                 exit 1
         fi
-        if ! cp ./examples/omxlooper.example /etc/systemd/system/omxlooper.service > /dev/null 2>&1
+        if ! cp ./examples/omxlooper.example /etc/systemd/system/omxlooper.service
             then
                 echo "Failed to install omxlooper service"
                 exit 1
@@ -318,18 +304,18 @@ fi
 
 # Make symlink to vupdate script
 echo "Creating symbolic link to vupdate script... You can invoke this script simply be typing: vupdate"
-if ! ln -s ~/vlooper/vupdate.sh /usr/bin/vupdate > /dev/null 2>&1
+if ! ln -s ~/vlooper/vupdate.sh /usr/bin/vupdate
     then
         echo "Failed to create vupdate symlink, you can optionally create this if you choose so"
     fi
 echo "Creating symbolic link to vlooper script... You can invoke this script simply be typing: vlooper {start|stop|restart}"
-if ! ln -s ~/vlooper/vlooper.sh /usr/bin/vlooper > /dev/null 2>&1
+if ! ln -s ~/vlooper/vlooper.sh /usr/bin/vlooper
     then
         echo "Failed to create vlooper symlink, this is necessary in order for the omxlooper service to run on boot!"
         echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/bin/vlooper"
 fi
 echo "Creating symbolic link to vloop_boot script..."
-if ! ln -s ~/vlooper/vlooper_boot.sh /usr/bin/vlooper_boot > /dev/null 2>&1
+if ! ln -s ~/vlooper/vlooper_boot.sh /usr/bin/vlooper_boot
     then
         echo "Failed to create vlooper symlink, this is necessary in order for the omxlooper service to run on boot!"
         echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/bin/vlooper"
@@ -337,31 +323,15 @@ fi
 
 # Setup crontab
 echo "Setting up crontab to run vupdate every minute"
-if ! crontab -l | { cat; echo "* * * * * /root/vlooper/vupdate.sh"; } | crontab -
+if ! crontab -l | { cat; echo "* * * * * /usr/bin/vlooper"; } | crontab -
     then
         echo "Failed to install cronjob to check for new media every minute"
         exit 1
 fi
 
-# Setup passwordless sudo for killall so that vlooper can start/stop omxplayer w/o needing a sudo password everytime
-## First check if this is being installed as root or not
-if [ "$EUID" -ne 0 ]
-    then
-        echo "Setting up sudo exemption for vlooper script to stop services"
-        touch ./examples/vlooper-exception > /dev/null 2>&1
-        echo "$USER ALL=(ALL) NOPASSWD: /usr/bin/killall" > ./examples/vlooper-exception > /dev/null 2>&1
-        echo "$sudoPW" | sudo -S -k chown root:root ./examples/vlooper-exception > /dev/null 2>&1
-        echo "$sudoPW" | sudo -S -k mv ./examples/vlooper-exception /etc/sudoers.d/ > /dev/null 2>&1
-fi
-
 # Setup omxLooper service so the video loop starts on boot and stays alive
 echo "Installing omxLooper service..."
-if ! sed -e "s,WorkingDirectory=,WorkingDirectory=$HOME/vlooper,ig" ./examples/omxlooper.example > ./examples/omxlooper.temp
-    then
-        echo "Failed to build omxLooper service file, aborting installation!"
-        exit 1
-fi
-if ! mv ./examples/omxlooper.temp ./examples/omxlooper.example > /dev/null 2>&1
+if ! sed -i'' -e "s,WorkingDirectory=,WorkingDirectory=$HOME/vlooper,ig" ./examples/omxlooper.example
     then
         echo "Failed to build omxLooper service file, aborting installation!"
         exit 1

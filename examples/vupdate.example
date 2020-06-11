@@ -3,9 +3,9 @@ source inc/main.cfg
 
 # Check SMB Mount to Fileserver
 if [[ -z $smbResult ]]
-then
-  printf "%s" "$timeStamp - SMB not mounted, not checking for new files..." >> $log
-  exit 1
+  then
+    printf "%s" "$timeStamp - SMB/NFS not mounted, not checking for new files..." >> $log
+    exit 1
 fi
 
 # Get into the scripts home directory
