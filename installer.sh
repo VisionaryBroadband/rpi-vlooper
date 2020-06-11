@@ -253,11 +253,6 @@ if ! cp ./examples/vlooper.example ~/vlooper/vlooper.sh && chmod +x ~/vlooper/vl
         echo "Failed to install vlooper script and make executable"
         exit 1
 fi
-if ! cp ./examples/vlooper_boot.example ~/vlooper/vlooper_boot.sh && chmod +x ~/vlooper/vlooper_boot.sh
-    then
-        echo "Failed to install vlooper_boot script and make executable"
-        exit 1
-fi
 if ! cp ./examples/vupdate.example ~/vlooper/vupdate.sh && chmod +x ~/vlooper/vupdate.sh
     then
         echo "Failed to install vupdate script and make executable"
@@ -275,6 +270,11 @@ if ! cp ./examples/announcement.mp4 "$HOME/vlooper/video/$playFile"
 fi
 if [ "$EUID" -ne 0 ]
     then
+        if ! echo "$sudoPW" | sudo -S -k cp ./examples/vlooper_boot.example /usr/local/bin/vlooper_boot.sh && chmod +x /usr/local/bin/vlooper_boot.sh
+            then
+                echo "Failed to install vlooper_boot script and make executable"
+                exit 1
+        fi
         if ! echo "$sudoPW" | sudo -S -k cp ./examples/vlogrotate.example /etc/logrotate.d/vlooper
             then
                 echo "Failed to create /etc/logrotate.d/vlooper"
@@ -291,6 +291,11 @@ if [ "$EUID" -ne 0 ]
                 fi
         fi
     else
+        if ! cp ./examples/vlooper_boot.example /usr/local/sbin/vlooper_boot.sh && chmod +x /usr/local/sbin/vlooper_boot.sh
+            then
+                echo "Failed to install vlooper_boot script and make executable"
+                exit 1
+        fi
         if ! cp ./examples/vlogrotate.example /etc/logrotate.d/vlooper
             then
                 echo "Failed to create /etc/logrotate.d/vlooper"
@@ -379,11 +384,18 @@ if [ "$EUID" -ne 0 ]
             then
                 echo "Failed to install omxlooper as a service, this is important if you want the video to loop automatically on boot after powerloss"
                 echo "Please remedy manually by referencing ./examples/omxlooper.example and installing that file into /etc/systemd/system/omxlooper.service"
+                exit 1
+        fi
+        if ! echo "$sudoPW" | sudo -S -k systemctl daemon-reload
+            then
+                echo "Failed to reload systemctl daemon!"
+                exit 1
         fi
         if ! echo "$sudoPW" | sudo -S -k systemctl start omxlooper.service
             then
                 echo "Failed to start omxlooper service!"
                 echo "Please investigate via sudo systemctl status omxlooper.service or log files"
+                exit 1
             else
                 echo "Started omxlooper service!"
         fi
@@ -391,6 +403,7 @@ if [ "$EUID" -ne 0 ]
             then
                 echo "Failed to enable omxlooper service!"
                 echo "Please investigate via sudo systemctl status omxlooper.service or log files"
+                exit 1
             else
                 echo "Enabled omxlooper service"
         fi
