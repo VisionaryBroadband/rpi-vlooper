@@ -15,7 +15,7 @@ printf "\n*************\n[WARNING] - This installation script makes a lot of ass
 diskUsage=$(df -H | grep -vE '^Filesystem|tmpfs|cdrom' | awk '{ print $5 " " $1 }' | grep root | awk '{ print $1}' | cut -d '%' -f1)
 if [[ $diskUsage -ge 90 ]]
     then
-        read -rp "Disk 90% or more full, would you like to try the installation anyways [y/N]?" diskWarn
+        read -rp "Disk 90% or more full, would you like to try the installation anyways [y/N]? " diskWarn
         if [ "$diskWarn" != "y" ]
             then
                 echo "Cancelling installation..."
@@ -34,7 +34,7 @@ if [ "$distroCheck" != "Raspbian" ]
         if [[ $versionCheck -lt 10 ]]
             then
                 echo "OS Version is less than 10 (Buster), you may encounter incompatibilities"
-                read -rp "Would you like to proceed anyways [y/N]?" osVersion
+                read -rp "Would you like to proceed anyways [y/N]? " osVersion
                 if [ "$osVersion" != "y" ]
                     then
                         echo "Cancelling installation..."
@@ -57,10 +57,10 @@ if [ "$EUID" -ne 0 ]
 fi
 
 # Prompt user how they want to import their new videos to the vlooper service
-read -rp "Would you like to retrieve your new videos from a remote file share such as SMB or NFS [y/N]?" mediaMethod
+read -rp "Would you like to retrieve your new videos from a remote file share such as SMB or NFS [y/N]? " mediaMethod
 if [[ "$mediaMethod" = "y" ]]
     then
-        read -rp "Would you like to use SMB or NFS [smb/nfs]?" remoteMethod
+        read -rp "Would you like to use SMB or NFS [smb/nfs]? " remoteMethod
     else
         echo "In order to play new videos automatically, you will need to upload them into this folder: /mnt/tvMedia"
 fi
@@ -81,7 +81,7 @@ for package in "${packages[@]}"; do
     pkgInstalled=$(dpkg --get-selections | grep "$package" | awk '{print $1}')
     if [[ -z $pkgInstalled ]]
         then
-            read -rp "$package not installed, install [y/N]?" doInstall
+            read -rp "$package not installed, install [y/N]? " doInstall
             if [[ "$doInstall" = "y" ]]
                 then
                     echo "Installing $package..."
@@ -113,8 +113,8 @@ echo "Dependencies met! Installing Video Looper now..."
 
 # Update the main.cfg file for usage
 echo "Building configuration file..."
-read -rp "What file name will your new videos be titled (ex. announcements.mp4)?" newFile
-read -rp "What file name will your playing video be titled (ex. announcement.mp4)?" playFile
+read -rp "What file name will your new videos be titled (ex. announcements.mp4)? " newFile
+read -rp "What file name will your playing video be titled (ex. announcement.mp4)? " playFile
 if ! sed -i'' -e "s,# fileOwner=,fileOwner=$USER,ig" -e "s,# baseDir=,baseDir=$HOME/vlooper,ig" -e "s,newVideo=\"announcements.mp4\",newVideo=\"$newFile\",ig" -e "s,curVideo=\"announcement.mp4\",curVideo=\"$playFile\",g" ./examples/main.example
     then
         echo "Failed to build configuration file, aborting installation!"
@@ -162,12 +162,12 @@ if [[ "$mediaMethod" = "y" ]]
         # Check if the user wants to use SMB or NFS
         if [[ "$remoteMethod" = "smb" ]]
             then
-                read -rp "What is the filepath for the SMB share you wish to mount (Ex. //192.168.0.1/TvMedia)?" smbShare
-                read -rp "What username should be used to connect to the SMB Share (leave blank for none)?" smbUser
+                read -rp "What is the filepath for the SMB share you wish to mount (Ex. //192.168.0.1/TvMedia)? " smbShare
+                read -rp "What username should be used to connect to the SMB Share (leave blank for none)? " smbUser
                 if [[ -n "$smbUser" ]]
                     then
-                        read -rp "What password should be used to connect to the SMB Share?" smbPass
-                        read -rp "What domain should be used to connect to the SMB Share (leave blank for none)?" smbDomain
+                        read -rp "What password should be used to connect to the SMB Share? " smbPass
+                        read -rp "What domain should be used to connect to the SMB Share (leave blank for none)? " smbDomain
                         # Create the SMB credential file
                         if ! touch ~/.smbCreds 2>&1
                             then
@@ -213,11 +213,11 @@ if [[ "$mediaMethod" = "y" ]]
                 fi
             else
                 # Setup the NFS connection
-                read -rp "What is the filepath for the NFS share you wish to mount (Ex. 192.168.0.1:/TvMedia)?" nfsShare
-                read -rp "What username should be used to connect to the NFS Share (leave blank for none)?" nfsUser
+                read -rp "What is the filepath for the NFS share you wish to mount (Ex. 192.168.0.1:/TvMedia)? " nfsShare
+                read -rp "What username should be used to connect to the NFS Share (leave blank for none)? " nfsUser
                 if [[ -n "$nfsUser" ]]
                     then
-                        read -rp "What password should be used to connect to the NFS Share?" nfsPass
+                        read -rp "What password should be used to connect to the NFS Share? " nfsPass
                         if ! echo "$sudoPW" | sudo -S -k echo "$nfsShare    /mnt/tvMedia  nfs    username=$nfsUser,password=$nfsPass,rw,noexec,nosuid 0 0" | sudo tee -a /etc/fstab > /dev/null /2>&1
                             then
                                 echo "Failed to add NFS Mount to /etc/fstab"
@@ -290,11 +290,6 @@ if [ "$EUID" -ne 0 ]
                         echo "Failed to update ownerships of /var/log/vlooper.log, please run: sudo chown $USER:$USER /var/log/vlooper.log"
                 fi
         fi
-        if ! echo "$sudoPW" | sudo -S -k cp ./examples/omxlooper.example /etc/systemd/system/omxlooper.service
-            then
-                echo "Failed to install omxlooper service"
-                exit 1
-        fi
     else
         if ! cp ./examples/vlogrotate.example /etc/logrotate.d/vlooper
             then
@@ -306,64 +301,68 @@ if [ "$EUID" -ne 0 ]
                 echo "Failed to create /var/log/vlooper.log"
                 exit 1
         fi
-        if ! cp ./examples/omxlooper.example /etc/systemd/system/omxlooper.service
-            then
-                echo "Failed to install omxlooper service"
-                exit 1
-        fi
 fi
 
 # Make symlink to vupdate script
 if [ "$EUID" -ne 0 ]
     then
         echo "Creating symbolic link to vupdate script... You can invoke this script simply be typing: vupdate"
-        if ! echo "$sudoPW" | sudo -S -k ln -s "$HOME/vlooper/vupdate.sh" /usr/bin/vupdate
+        if ! echo "$sudoPW" | sudo -S -k ln -s "$HOME/vlooper/vupdate.sh" /usr/local/bin/vupdate
             then
                 echo "Failed to create vupdate symlink, you can optionally create this if you choose so"
-            fi
+        fi
         echo "Creating symbolic link to vlooper script... You can invoke this script simply be typing: vlooper {start|stop|restart}"
-        if ! echo "$sudoPW" | sudo -S -k ln -s "$HOME/vlooper/vlooper.sh" /usr/bin/vlooper
+        if ! echo "$sudoPW" | sudo -S -k ln -s "$HOME/vlooper/vlooper.sh" /usr/local/bin/vlooper
             then
                 echo "Failed to create vlooper symlink, this is necessary in order for the omxlooper service to run on boot!"
-                echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/bin/vlooper"
+                echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/local/bin/vlooper"
         fi
         echo "Creating symbolic link to vloop_boot script..."
-        if ! echo "$sudoPW" | sudo -S -k ln -s "$HOME/vlooper/vlooper_boot.sh" /usr/bin/vlooper_boot
+        if ! echo "$sudoPW" | sudo -S -k ln -s "$HOME/vlooper/vlooper_boot.sh" /usr/local/bin/vlooper_boot
             then
                 echo "Failed to create vlooper symlink, this is necessary in order for the omxlooper service to run on boot!"
-                echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/bin/vlooper"
+                echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/local/bin/vlooper"
         fi
     else
-        echo "Creating symbolic link to vupdate script... You can invoke this script simply be typing: vupdate"
-        if ! ln -s ~/vlooper/vupdate.sh /usr/bin/vupdate
+        echo "Creating symbolic link to vupdate script..."
+        if ! ln -s ~/vlooper/vupdate.sh /usr/local/sbin/vupdate
             then
                 echo "Failed to create vupdate symlink, you can optionally create this if you choose so"
-            fi
-        echo "Creating symbolic link to vlooper script... You can invoke this script simply be typing: vlooper {start|stop|restart}"
-        if ! ln -s ~/vlooper/vlooper.sh /usr/bin/vlooper
+        fi
+        echo "Creating symbolic link to vlooper script..."
+        if ! ln -s ~/vlooper/vlooper.sh /usr/local/sbin/vlooper
             then
                 echo "Failed to create vlooper symlink, this is necessary in order for the omxlooper service to run on boot!"
-                echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/bin/vlooper"
+                echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/local/bin/vlooper"
         fi
         echo "Creating symbolic link to vloop_boot script..."
-        if ! ln -s ~/vlooper/vlooper_boot.sh /usr/bin/vlooper_boot
+        if ! ln -s ~/vlooper/vlooper_boot.sh /usr/local/sbin/vlooper_boot
             then
                 echo "Failed to create vlooper symlink, this is necessary in order for the omxlooper service to run on boot!"
-                echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/bin/vlooper"
+                echo "  - Please manually create this with: ln -s ~/vlooper/vlooper.sh /usr/local/bin/vlooper"
         fi
 fi
 
 # Setup crontab
 echo "Setting up crontab to run vupdate every minute"
-if ! crontab -l | { cat; echo "* * * * * /usr/bin/vlooper"; } | crontab -
+if [ "$EUID" -ne 0 ]
     then
-        echo "Failed to install cronjob to check for new media every minute"
-        exit 1
+        if ! crontab -l | { cat; echo "* * * * * /usr/local/bin/vlooper"; } | crontab -
+            then
+                echo "Failed to install cronjob to check for new media every minute"
+                exit 1
+        fi
+    else
+        if ! crontab -l | { cat; echo "* * * * * /usr/local/sbin/vlooper"; } | crontab -
+            then
+                echo "Failed to install cronjob to check for new media every minute"
+                exit 1
+        fi
 fi
 
 # Setup omxLooper service so the video loop starts on boot and stays alive
 echo "Installing omxLooper service..."
-if ! sed -i'' -e "s,WorkingDirectory=,WorkingDirectory=$HOME/vlooper,ig" ./examples/omxlooper.example
+if ! sed -i'' -e "s,WorkingDirectory=,WorkingDirectory=$HOME/vlooper,ig" -e "s,User=,User=$USER,g" ./examples/omxlooper.example
     then
         echo "Failed to build omxLooper service file, aborting installation!"
         exit 1

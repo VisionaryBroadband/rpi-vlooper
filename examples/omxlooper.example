@@ -8,7 +8,7 @@ ExecStart=/usr/bin/vlooper_boot
 WorkingDirectory=
 StandardOutput=syslog
 StandardError=syslog
-User=root
+User=
 
 [Install]
 WantedBy=multi-user.target
