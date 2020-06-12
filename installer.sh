@@ -16,16 +16,13 @@ if [ "$EUID" -ne 0 ]
 fi
 
 # Warn users that this installation script is assumption-heavy
-echo ""
 echo -e "[ ${YELLOW}WARNING${NC} ] - This installation script makes a lot of assumptions and you may encounter errors."
-echo ""
 
 # Check for sufficient disk space
 diskUsage=$(df -H | grep -vE '^Filesystem|tmpfs|cdrom' | awk '{ print $5 " " $1 }' | grep root | awk '{ print $1}' | cut -d '%' -f1)
 if [[ $diskUsage -ge 90 ]]
     then
         echo -e "[ ${YELLOW}WARNING${NC} ] Disk 90% or more full!"
-        echo ""
         read -rp "[  INPUT  ] Would you like to try the installation anyways [y/N]? " diskWarn
         if [ "$diskWarn" != "y" ]
             then
@@ -68,14 +65,11 @@ if [ "$EUID" -ne 0 ]
 fi
 
 # Prompt user how they want to import their new videos to the vlooper service
-echo ""
 read -rp "[  INPUT  ] Would you like to retrieve your new videos from a remote file share such as SMB or NFS [y/N]? " mediaMethod
 if [[ "$mediaMethod" = "y" ]]
     then
-        echo ""
         read -rp "[  INPUT  ] Would you like to use SMB or NFS [smb/nfs]? " remoteMethod
     else
-        echo ""
         echo "[  INPUT  ] In order to play new videos automatically, you will need to upload them into this folder: /mnt/tvMedia"
 fi
 
@@ -127,9 +121,7 @@ echo -e "[   ${GREEN}OK${NC}    ] Dependencies met! Installing Video Looper now.
 
 # Update the main.cfg file for usage
 echo "[   ---   ] Building configuration file..."
-echo ""
 read -rp "[  INPUT  ] What file name will your new videos be titled (ex. announcements.mp4)? " newFile
-echo ""
 read -rp "[  INPUT  ] What file name will your playing video be titled (ex. announcement.mp4)? " playFile
 if ! sed -i'' -e "s,# fileOwner=,fileOwner=$USER,ig" -e "s,# baseDir=,baseDir=$HOME/vlooper,ig" -e "s,newVideo=\"announcements.mp4\",newVideo=\"$newFile\",ig" -e "s,curVideo=\"announcement.mp4\",curVideo=\"$playFile\",g" ./examples/main.example
     then
@@ -190,15 +182,11 @@ if [[ "$mediaMethod" = "y" ]]
         # Check if the user wants to use SMB or NFS
         if [[ "$remoteMethod" = "smb" ]]
             then
-                echo ""
                 read -rp "[  INPUT  ] What is the filepath for the SMB share you wish to mount (Ex. //192.168.0.1/TvMedia)? " smbShare
-                echo ""
                 read -rp "[  INPUT  ] What username should be used to connect to the SMB Share (leave blank for none)? " smbUser
                 if [[ -n "$smbUser" ]]
                     then
-                        echo ""
                         read -rp "[  INPUT  ] What password should be used to connect to the SMB Share? " smbPass
-                        echo ""
                         read -rp "[  INPUT  ] What domain should be used to connect to the SMB Share (leave blank for none)? " smbDomain
                         # Create the SMB credential file
                         if ! touch ~/.smbCreds 2>&1
@@ -245,13 +233,10 @@ if [[ "$mediaMethod" = "y" ]]
                 fi
             else
                 # Setup the NFS connection
-                echo ""
                 read -rp "[  INPUT  ] What is the filepath for the NFS share you wish to mount (Ex. 192.168.0.1:/TvMedia)? " nfsShare
-                echo ""
                 read -rp "[  INPUT  ] What username should be used to connect to the NFS Share (leave blank for none)? " nfsUser
                 if [[ -n "$nfsUser" ]]
                     then
-                        echo ""
                         read -rp "[  INPUT  ]What password should be used to connect to the NFS Share? " nfsPass
                         if ! echo "$sudoPW" | sudo -S -k echo "$nfsShare    /mnt/tvMedia  nfs    username=$nfsUser,password=$nfsPass,rw,noexec,nosuid 0 0" | sudo tee -a /etc/fstab > /dev/null /2>&1
                             then
