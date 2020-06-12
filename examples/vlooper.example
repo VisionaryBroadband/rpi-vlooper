@@ -5,14 +5,17 @@
 case "$1" in start)
     if [[ -n $omxPid ]]
         then
-            printf "\n$timeStamp - Video Playback already running!\n" >> "$log"
+            printf "%s" "$timeStamp - Video Playback already running!" >> "$log"
+            printf "\n" >> "$log"
         else
             if [[ -s $videoFile ]]
             then
                 screen -dmS vlooper sh -c "omxplayer -o both $videoFile -b --loop --no-osd"
-                printf "\n$timeStamp - Video Playback Started...\n" >> "$log"
+                printf "%s" "$timeStamp - Video Playback Started..." >> "$log"
+                printf "\n" >> "$log"
             else
-                printf "\n$timeStamp - $videoFile doesn't exist or is zero length, video playback not started!\n" >> "$log"
+                printf "%s" "$timeStamp - $videoFile doesn't exist or is zero length, video playback not started!" >> "$log"
+                printf "\n" >> "$log"
             fi
     fi
 ;;
@@ -21,9 +24,11 @@ case "$1" in start)
 stop)
     if ! sudo killall omxplayer.bin > /dev/null 2>&1
         then
-            printf "\n$timeStamp - Failed to stop Video Playback!\n" >> "$log"
+            printf "%s" "$timeStamp - Failed to stop Video Playback!" >> "$log"
+            printf "\n" >> "$log"
         else
-            printf "\n$timeStamp - Video Playback Stopped...\n" >> "$log"
+            printf "%s" "$timeStamp - Video Playback Stopped..." >> "$log"
+            printf "\n" >> "$log"
     fi
 ;;
 
@@ -40,17 +45,21 @@ if [[ -n $omxPid ]]
         if [[ -s $videoFile ]]
             then
             screen -dmS vlooper sh -c "omxplayer -o local $videoFile -b --loop --no-osd"
-            printf "\n$timeStamp - Video Playback Restarted...\n" >> "$log"
+            printf "%s" "$timeStamp - Video Playback Restarted..." >> "$log"
+            printf "\n" >> "log"
             else
-            printf "\n$videoFile doesn't exist or is zero length, video playback not started!\n" >> "$log"
+            printf "%s" "$videoFile doesn't exist or is zero length, video playback not started!" >> "$log"
+            printf "\n"
         fi
     else
         if [[ -s $videoFile ]]
             then
             screen -dmS vlooper sh -c "omxplayer -o local $videoFile -b --loop --no-osd"
-            printf "\n$timeStamp - Video Playback started...\n" >> "$log"
+            printf "%s" "$timeStamp - Video Playback started..." >> "$log"
+            printf "\n" >> "$log"
             else
-            printf "\n$timeStamp - $videoFile doesn't exist or is zero length, video playback not started!\n" >> "$log"
+            printf "%s" "$timeStamp - $videoFile doesn't exist or is zero length, video playback not started!" >> "$log"
+            printf "\n" >> "$log"
         fi
 fi
 ;;
