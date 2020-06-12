@@ -1,5 +1,5 @@
 #!/bin/bash
-source inc/main.cfg
+#source
 
 if [[ -n $omxPid ]]
     then

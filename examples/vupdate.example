@@ -1,10 +1,11 @@
 #!/bin/bash
-source inc/main.cfg
+#source
 
 # Check SMB Mount to Fileserver
 if [[ -z $smbResult ]]
   then
     printf "%s" "$timeStamp - SMB/NFS not mounted, not checking for new files..." >> $log
+    printf "\n" >> $log
     exit 1
 fi
 
@@ -27,7 +28,7 @@ if [[ -n "$src" ]]
       else
         printf "-- %s" "$src moved to $videoDir" >> $log
     fi
-  
+
     # Check if omxplayer is running and terminate if it is
     if [[ -n $omxPid ]]
     then

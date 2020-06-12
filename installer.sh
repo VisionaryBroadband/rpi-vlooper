@@ -128,6 +128,23 @@ if ! sed -i'' -e "s,create 660,create 660 $USER $USER,g" ./examples/vlogrotate.e
         exit 1
 fi
 
+# Update both scripts to specify the full filepath to the main.cfg
+if ! sed -i'' -e "s,source,source $HOME/vlooper/inc/main.cfg,g" ./examples/vlooper.example
+    then
+        echo "Failed to update vlooper script with main.cfg path"
+        exit 1
+fi
+if ! sed -i'' -e "s,source,source $HOME/vlooper/inc/main.cfg,g" ./examples/vlooper_boot.example
+    then
+        echo "Failed to update vlooper_boot script with main.cfg path"
+        exit 1
+fi
+if ! sed -i'' -e "s,source,source $HOME/vlooper/inc/main.cfg,g" ./examples/vupdate.example
+    then
+        echo "Failed to update vupdate script with main.cfg path"
+        exit 1
+fi
+
 # Create all the directories for the script to be installed in
 echo "Creating directories..."
 if ! mkdir -p ~/vlooper/inc
