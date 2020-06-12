@@ -67,7 +67,7 @@ fi
 
 # Check for dependencies and ask to install them if unmet
 echo "Checking dependencies..."
-declare -a packages=("omxplayer")
+declare -a packages=("omxplayer" "screen")
 if [[ "$mediaMethod" = "y" ]]
     then
         if [[ "$remoteMethod" = "smb" ]]
@@ -296,9 +296,14 @@ if [ "$EUID" -ne 0 ]
                 echo "Failed to create /var/log/vlooper.log"
                 exit 1
             else
-                if ! echo "$sudoPW" | sudo -S -k chown "$USER":"$USER" /var/log/vlooper.log
+                if ! echo "$sudoPW" | sudo -S -k chown "$USER":root /var/log/vlooper.log
                     then
-                        echo "Failed to update ownerships of /var/log/vlooper.log, please run: sudo chown $USER:$USER /var/log/vlooper.log"
+                        echo "Failed to update ownerships of /var/log/vlooper.log, please run: sudo chown $USER:root /var/log/vlooper.log"
+                    else
+                        if ! echo "$sudoPW" | sudo -S -k chmod 660 /var/log/vlooper.log
+                            then
+                                echo "Failed to set permissions of /var/log/vlooper.log, please run: sudo chmod 660 /var/log/vlooper.log"
+                        fi
                 fi
         fi
     else
