@@ -3,14 +3,14 @@
 
 if [[ -n $omxPid ]]
     then
-        printf "\n$timeStamp - Video Playback already running!\n" >> $log
+        printf "\n$timeStamp - Video Playback already running!\n" >> "$log"
         exit 1
     else
         if [[ -s $videoFile ]]
             then
                 screen -dmS vlooper sh -c "omxplayer -o both $videoFile -b --loop --no-osd"
-                printf "\n$timeStamp - Video Playback Started...\n" >> $log
+                printf "\n$timeStamp - Video Playback Started...\n" >> "$log"
             else
-                printf "\n$timeStamp - $videoFile doesn't exist or is zero length, video playback not started!\n" >> $log
+                printf "\n$timeStamp - $videoFile doesn't exist or is zero length, video playback not started!\n" >> "$log"
         fi
 fi

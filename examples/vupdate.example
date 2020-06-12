@@ -4,81 +4,85 @@
 # Check SMB Mount to Fileserver
 if [[ -z $smbResult ]]
   then
-    printf "%s" "$timeStamp - SMB/NFS not mounted, not checking for new files..." >> $log
-    printf "\n" >> $log
+    printf "%s" "$timeStamp - SMB/NFS not mounted, not checking for new files..." >> "$log"
+    printf "\n" >> "$log"
     exit 1
 fi
 
 # Get into the scripts home directory
-cd "$baseDir" || { echo "Failed to cd into $baseDir" >> $log; exit 1; }
+cd "$baseDir" || { echo "Failed to cd into $baseDir" >> "$log"; exit 1; }
 
 # Check the SMB remote folder for video(s)
-src=$(find $remoteDir -maxdepth 1 -type f -name "$newVideo")
+src=$(find "$remoteDir" -maxdepth 1 -type f -name "$newVideo")
 
 # Check result of src, if not null then process video
 if [[ -n "$src" ]]
   then
-    printf "%s" "$timeStamp - New file found, initiating video update process..." >> $log
+    printf "%s" "$timeStamp - New file found, initiating video update process..." >> "$log"
+    printf "\n" >> "$log"
 
     # Move new file from $remoteDir to $videoDir
     if ! mv -f "$src" "$videoDir"
       then
-        printf "-- failed to move %s" "$src to $videoDir" >> $log
+        printf "-- failed to move %s" "$src to $videoDir" >> "$log"
+        printf "\n" >> "$log"
         exit 1
       else
-        printf "-- %s" "$src moved to $videoDir" >> $log
+        printf "-- %s" "$src moved to $videoDir" >> "$log"
+        printf "\n" >> "$log"
     fi
 
     # Check if omxplayer is running and terminate if it is
     if [[ -n $omxPid ]]
     then
-      printf "-- Stopping Videolooper..." >> $log
+      printf "-- Stopping Videolooper...\n" >> "$log"
       if ! vlooper stop
         then
-          printf "---- Failed to stop vlooper!" >> $log
+          printf "---- Failed to stop vlooper!\n" >> "$log"
           exit 1
         else
-          printf "---- Stopped vlooper" >> $log
+          printf "---- Stopped vlooper\n" >> "$log"
       fi
     fi
 
     # Move current playing video and send to $archiveDir
     if ! mv -f "$videoDir/$curVideo" "$archiveDir"
       then
-        printf "-- Failed to archive current video!" >> $log
+        printf "-- Failed to archive current video!\n" >> "$log"
       else
-        printf "-- Current video archived" >> $log
+        printf "-- Current video archived\n" >> "$log"
     fi
     if ! mv -f "$archiveDir/$curVideo" "$archiveDir/$archName"
       then
-        printf "-- Failed to timstamp archive video!" >> $log
+        printf "-- Failed to timstamp archive video!\n" >> "$log"
       else
-        printf "-- Archive timestamped" >> $log
+        printf "-- Archive timestamped\n" >> "$log"
     fi
 
     # Rename (load/queue) new video
     if ! mv -f "$videoDir/$newVideo" "$videoDir/$curVideo"
       then
-        printf "-- Failed to load new video!" >> $log
+        printf "-- Failed to load new video!\n" >> "$log"
       else
-        printf "-- Loaded new video" >> $log
+        printf "-- Loaded new video\n" >> "$log"
     fi
 
     # Change new file ownership to installed user
-    if ! chown $fileOwner:$fileOwner "$videoFile"
+    if ! chown "$fileOwner":"$fileOwner" "$videoFile"
       then
-        printf "-- Failed to set ownership of video!" >> $log
+        printf "-- Failed to set ownership of video!\n" >> "$log"
       else
-        printf "-- Set ownership on video" >> $log
+        printf "-- Set ownership on video\n" >> "$log"
     fi
 
     #Start videolooper. If success send to log.
     if ! vlooper start
       then
-        printf "-- Failed to start vlooper!" >> $log
+        printf "-- Failed to start vlooper!\n" >> "$log"
       else
-        printf "-- Started vlooper" >> $log
+        printf "-- Started vlooper\n" >> "$log"
     fi
   else
-    printf "%s" "$timeStamp - No new video found" >> $log
+    printf "%s" "$timeStamp - No new video found" >> "$log"
+    printf "\n" >> "$log"
 fi
