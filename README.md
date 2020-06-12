@@ -14,10 +14,10 @@ This is where this repo comes into play. This will install all the necessary fil
   * (optional) `nfs-common`
 
 ## Installation instructions
-1. `cd ~`
-2. `git clone https://github.com/captainfodder/rpi-vlooper.git`
-3. `cd ~/rpi-vlooper`
-4. `chmod +x installer.sh`
+1. `sudo apt install git -y`
+2. `cd ~`
+3. `git clone git://github.com/captainfodder/rpi-vlooper.git`
+4. `cd ~/rpi-vlooper && chmod +x installer.sh`
 5. `./installer.sh`
 
 ## Other notes

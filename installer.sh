@@ -80,7 +80,7 @@ fi
 
 # Check for dependencies and ask to install them if unmet
 echo "[   ---   ] Checking dependencies..."
-declare -a packages=("omxplayer" "screen")
+declare -a packages=("omxplayer")
 if [[ "$mediaMethod" = "y" ]]
     then
         if [[ "$remoteMethod" = "smb" ]]
@@ -401,6 +401,17 @@ if [ "$EUID" -ne 0 ]
         fi
 fi
 
+# Check if script is being ran over SSH
+if [[ -n "$SSH_CLIENT" ]] || [[ -n "$SSH_TTY" ]]
+    then
+        SESSION_TYPE=remote/ssh
+    else
+        case $(ps -o comm= -p $PPID) in
+            sshd|*/sshd) SESSION_TYPE=remote/ssh
+        ;;
+        esac
+fi
+
 # Setup vlooper service so the video loop starts on boot and stays alive
 echo "[   ---   ] Installing Video Looper service..."
 if [ "$EUID" -ne 0 ]
@@ -421,15 +432,38 @@ if [ "$EUID" -ne 0 ]
                 echo -e "[ ${RED}FAILED${NC}  ] Could not reload systemctl daemon!"
                 exit 1
         fi
-        if ! echo "$sudoPW" | sudo -S -k systemctl start vlooper.service
+        if [[ -n $SESSION_TYPE ]]
             then
-                echo -e "[ ${RED}FAILED${NC}  ] Could not start vlooper service!"
-                echo -e "[  ${CYAN}INFO${NC}   ] Please investigate via sudo systemctl status vlooper.service or log files"
-                exit 1
+                echo -e "[  ${CYAN}INFO${NC}   ] It looks like you are running this script locally instead of over SSH"
+                echo -e "[  ${CYAN}INFO${NC}   ] When the Video Looper service starts, the video playback will use this current display"
+                echo -e "[  ${CYAN}INFO${NC}   ] This means you will not be able to see the console anymore."
+                read -rp "[  INPUT  ] Do you want to start the Video Looper service now [y/N]? " startService
             else
-                echo -e "[   ${GREEN}OK${NC}    ] Started vlooper service!"
+                if ! echo "$sudoPW" | sudo -S -k systemctl start vlooper.service
+                    then
+                        echo -e "[ ${RED}FAILED${NC}  ] Could not start vlooper service!"
+                        echo -e "[  ${CYAN}INFO${NC}   ] Please investigate via sudo systemctl status vlooper.service or log files"
+                        exit 1
+                    else
+                        echo -e "[   ${GREEN}OK${NC}    ] Started vlooper service!"
+                fi
         fi
-        if ! echo "$sudoPW" | sudo -S -k systemctl enable vlooper.service
+        if [[ "$startService" = "y" ]]
+            then
+                echo -e "[  ${CYAN}INFO${NC}   ] Even though the video is playing over your console, you can still type commands so long as you're logged in"
+                echo -e "[  ${CYAN}INFO${NC}   ] You can stop the service and regain visibility of your console with: sudo systemctl stop vlooper"
+                if ! echo "$sudoPW" | sudo -S -k systemctl start vlooper.service
+                    then
+                        echo -e "[ ${RED}FAILED${NC}  ] Could not start vlooper service!"
+                        echo -e "[  ${CYAN}INFO${NC}   ] Please investigate via sudo systemctl status vlooper.service or log files"
+                        exit 1
+                    else
+                        echo -e "[   ${GREEN}OK${NC}    ] Started vlooper service!"
+                fi
+            else
+                echo -e "[  ${CYAN}INFO${NC}   ] You can start the Video Looper service whenever you are ready with: sudo systemctl start vlooper"
+        fi
+        if ! echo "$sudoPW" | sudo -S -k systemctl enable vlooper.service > /dev/null 2>&1
             then
                 echo -e "[ ${RED}FAILED${NC}  ] Could not enable vlooper service!"
                 echo -e "[  ${CYAN}INFO${NC}   ] Please investigate via sudo systemctl status vlooper.service or log files"
@@ -457,7 +491,7 @@ if [ "$EUID" -ne 0 ]
             else
                 echo -e "[   ${GREEN}OK${NC}    ] Started vlooper service!"
         fi
-        if ! systemctl enable vlooper.service
+        if ! systemctl enable vlooper.service > /dev/null 2>&1
             then
                 echo -e "[ ${RED}FAILED${NC}  ] Could not enable vlooper service!"
                 echo -e "[  ${CYAN}INFO${NC}   ] Please investigate via sudo systemctl status vlooper.service or log files"
