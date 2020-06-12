@@ -27,19 +27,15 @@ videoDir="$baseDir/video"
 # - Used to tell what video file omxplayer should use
 videoFile="$videoDir/$curVideo"
 
-# Network
-# - Specify your current network
-localNet=$(ip route show | grep default | awk '{print $3}' | sed -re 's/\.[0-9]*$//g')
+# Network path
+# - Specify the full filepath to the folder the videos are uploaded to
+remoteDir="/mnt/tvMedia"
 
 # Network mount
 # - Specify the first three octets of the network to see if the SMB Network share is mounted or not
 # - Set smbResult to true if you are not using a remote file share like SMB or NFS
 #smbResult="true"
-smbResult=$(sudo mount -ls | grep "$localNet")
-
-# Network path
-# - Specify the full filepath to the folder the videos are uploaded to
-remoteDir="/mnt/tvMedia"
+smbResult=$(sudo mount -ls | grep "$remoteDir")
 
 # Archive path
 # - Specify the full filepath to the folder you wish the old videos to be archived to
