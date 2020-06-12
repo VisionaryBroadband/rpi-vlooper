@@ -448,7 +448,13 @@ if [ "$EUID" -ne 0 ]
                 echo -e "[  ${CYAN}INFO${NC}   ] This means you will not be able to see the console anymore."
                 echo -e "[  ${CYAN}INFO${NC}   ] Even though the video will be playing over your console, you can still type commands so long as you're logged in"
                 echo -e "[  ${CYAN}INFO${NC}   ] You can stop the service and regain visibility of your console with: sudo systemctl stop vlooper"
-                read -rp "[  INPUT  ] Do you want to start the Video Looper service now [y/N]? " startService
+                read -rp "[  INPUT  ] Do you want to start the Video Looper service now [y/N]? " startServiceInput
+                if [[ -n $startServiceInput ]]
+                    then
+                        startService="$startServiceInput"
+                    else
+                        startService="n"
+                fi
         fi
         if [[ "$startService" = "y" ]]
             then
