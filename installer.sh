@@ -434,24 +434,24 @@ if [ "$EUID" -ne 0 ]
         fi
         if [[ -n $SESSION_TYPE ]]
             then
+                if ! echo "$sudoPW" | sudo -S -k systemctl start vlooper.service
+                    then
+                        echo -e "[ ${RED}FAILED${NC}  ] Could not start vlooper service!"
+                        echo -e "[  ${CYAN}INFO${NC}   ] Please investigate via sudo systemctl status vlooper.service or log files"
+                        exit 1
+                    else
+                        echo -e "[   ${GREEN}OK${NC}    ] Started vlooper service!"
+                fi
+            else
                 echo -e "[  ${CYAN}INFO${NC}   ] It looks like you are running this script locally instead of over SSH"
                 echo -e "[  ${CYAN}INFO${NC}   ] When the Video Looper service starts, the video playback will use this current display"
                 echo -e "[  ${CYAN}INFO${NC}   ] This means you will not be able to see the console anymore."
+                echo -e "[  ${CYAN}INFO${NC}   ] Even though the video will be playing over your console, you can still type commands so long as you're logged in"
+                echo -e "[  ${CYAN}INFO${NC}   ] You can stop the service and regain visibility of your console with: sudo systemctl stop vlooper"
                 read -rp "[  INPUT  ] Do you want to start the Video Looper service now [y/N]? " startService
-            else
-                if ! echo "$sudoPW" | sudo -S -k systemctl start vlooper.service
-                    then
-                        echo -e "[ ${RED}FAILED${NC}  ] Could not start vlooper service!"
-                        echo -e "[  ${CYAN}INFO${NC}   ] Please investigate via sudo systemctl status vlooper.service or log files"
-                        exit 1
-                    else
-                        echo -e "[   ${GREEN}OK${NC}    ] Started vlooper service!"
-                fi
         fi
         if [[ "$startService" = "y" ]]
             then
-                echo -e "[  ${CYAN}INFO${NC}   ] Even though the video is playing over your console, you can still type commands so long as you're logged in"
-                echo -e "[  ${CYAN}INFO${NC}   ] You can stop the service and regain visibility of your console with: sudo systemctl stop vlooper"
                 if ! echo "$sudoPW" | sudo -S -k systemctl start vlooper.service
                     then
                         echo -e "[ ${RED}FAILED${NC}  ] Could not start vlooper service!"
@@ -461,7 +461,10 @@ if [ "$EUID" -ne 0 ]
                         echo -e "[   ${GREEN}OK${NC}    ] Started vlooper service!"
                 fi
             else
-                echo -e "[  ${CYAN}INFO${NC}   ] You can start the Video Looper service whenever you are ready with: sudo systemctl start vlooper"
+                if [[ -n $startService ]]
+                    then
+                        echo -e "[  ${CYAN}INFO${NC}   ] You can start the Video Looper service whenever you are ready with: sudo systemctl start vlooper"
+                fi
         fi
         if ! echo "$sudoPW" | sudo -S -k systemctl enable vlooper.service > /dev/null 2>&1
             then
