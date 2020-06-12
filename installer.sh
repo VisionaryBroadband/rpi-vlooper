@@ -7,6 +7,10 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# Declare default variables
+newFile="announcements.mp4"
+playFile="announcement.mp4"
+
 # Check if this is being installed as root or not
 if [ "$EUID" -ne 0 ]
     then
@@ -16,6 +20,7 @@ if [ "$EUID" -ne 0 ]
 fi
 
 # Warn users that this installation script is assumption-heavy
+printf "\n"
 echo -e "[ ${YELLOW}WARNING${NC} ] This installation script makes a lot of assumptions and you may encounter errors."
 
 # Check for sufficient disk space
@@ -121,15 +126,15 @@ echo -e "[   ${GREEN}OK${NC}    ] Dependencies met! Installing Video Looper now.
 
 # Update the main.cfg file for usage
 echo "[   ---   ] Building configuration file..."
-read -rp "[  INPUT  ] What file name will your new videos be titled (ex. announcements.mp4)? " newFile
-if [[ -n $newFile ]]
+read -rp "[  INPUT  ] What file name will your new videos be titled [$newFile]? " newFileInput
+if [[ -n $newFileInput ]]
     then
-        newFile="announcements.mp4"
+        newFile="$newFileInput"
 fi
-read -rp "[  INPUT  ] What file name will your playing video be titled (ex. announcement.mp4)? " playFile
-if [[ -n $playFile ]]
+read -rp "[  INPUT  ] What file name will your playing video be titled [$playFile]? " playFileInput
+if [[ -n $playFileInput ]]
     then
-        playFile="announcement.mp4"
+        playFile="$playFileInput"
 fi
 if ! sed -i'' -e "s,# fileOwner=,fileOwner=$USER,ig" -e "s,# baseDir=,baseDir=$HOME/vlooper,ig" -e "s,newVideo=\"announcements.mp4\",newVideo=\"$newFile\",ig" -e "s,curVideo=\"announcement.mp4\",curVideo=\"$playFile\",g" ./examples/main.example
     then
