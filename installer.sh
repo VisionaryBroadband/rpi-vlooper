@@ -16,7 +16,7 @@ if [ "$EUID" -ne 0 ]
 fi
 
 # Warn users that this installation script is assumption-heavy
-echo -e "[ ${YELLOW}WARNING${NC} ] - This installation script makes a lot of assumptions and you may encounter errors."
+echo -e "[ ${YELLOW}WARNING${NC} ] This installation script makes a lot of assumptions and you may encounter errors."
 
 # Check for sufficient disk space
 diskUsage=$(df -H | grep -vE '^Filesystem|tmpfs|cdrom' | awk '{ print $5 " " $1 }' | grep root | awk '{ print $1}' | cut -d '%' -f1)
