@@ -1,6 +1,6 @@
 # Global variables go here
 # This file should be included in vupdate.sh and vlooper.sh
-log=/var/log/vlogger.log
+log=/var/log/vlooper.log
 timeStamp=$(date +"%Y-%m-%d %T")
 
 # Installation user
