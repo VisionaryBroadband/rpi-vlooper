@@ -122,7 +122,15 @@ echo -e "[   ${GREEN}OK${NC}    ] Dependencies met! Installing Video Looper now.
 # Update the main.cfg file for usage
 echo "[   ---   ] Building configuration file..."
 read -rp "[  INPUT  ] What file name will your new videos be titled (ex. announcements.mp4)? " newFile
+if [[ -n $newFile ]]
+    then
+        newFile="announcements.mp4"
+fi
 read -rp "[  INPUT  ] What file name will your playing video be titled (ex. announcement.mp4)? " playFile
+if [[ -n $playFile ]]
+    then
+        playFile="announcement.mp4"
+fi
 if ! sed -i'' -e "s,# fileOwner=,fileOwner=$USER,ig" -e "s,# baseDir=,baseDir=$HOME/vlooper,ig" -e "s,newVideo=\"announcements.mp4\",newVideo=\"$newFile\",ig" -e "s,curVideo=\"announcement.mp4\",curVideo=\"$playFile\",g" ./examples/main.example
     then
         echo -e "[ ${RED}FAILED${NC}  ] Could not build configuration file, aborting installation!"
