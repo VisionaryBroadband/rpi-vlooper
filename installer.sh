@@ -248,20 +248,34 @@ fi
 
 # Install the files into those directories
 echo "Installing files into directories..."
-if ! cp ./examples/vlooper.example ~/vlooper/vlooper.sh && chmod +x ~/vlooper/vlooper.sh
+if ! cp ./examples/vlooper.example ~/vlooper/vlooper.sh
     then
-        echo "Failed to install vlooper script and make executable"
-        exit 1
+        echo "Failed to install vlooper script"
+    else
+        if ! chmod +x ~/vlooper/vlooper.sh
+            then
+                echo "Failed to make vlooper script executable"
+        fi
 fi
-if ! cp ./examples/vupdate.example ~/vlooper/vupdate.sh && chmod +x ~/vlooper/vupdate.sh
+if ! cp ./examples/vupdate.example ~/vlooper/vupdate.sh
     then
-        echo "Failed to install vupdate script and make executable"
+        echo "Failed to install vupdate script"
         exit 1
+    else
+        if ! chmod +x ~/vlooper/vupdate.sh
+            then
+                echo "Failed to make vupdate script executable"
+        fi
 fi
-if ! cp ./examples/main.example ~/vlooper/inc/main.cfg && chmod +x ~/vlooper/inc/main.cfg
+if ! cp ./examples/main.example ~/vlooper/inc/main.cfg
     then
         echo "Failed to install configuration file and make executable"
         exit 1
+    else
+        if ! chmod +x ~/vlooper/inc/main.cfg
+            then
+                echo "Failed to make main.cfg script executable"
+        fi
 fi
 if ! cp ./examples/announcement.mp4 "$HOME/vlooper/video/$playFile"
     then
@@ -367,13 +381,13 @@ fi
 echo "Setting up crontab to run vupdate every minute"
 if [ "$EUID" -ne 0 ]
     then
-        if ! crontab -l | { cat; echo "* * * * * /usr/local/bin/vlooper"; } | crontab -
+        if ! crontab -l | { cat; echo "* * * * * /usr/local/bin/vupdate"; } | crontab -
             then
                 echo "Failed to install cronjob to check for new media every minute"
                 exit 1
         fi
     else
-        if ! crontab -l | { cat; echo "* * * * * /usr/local/sbin/vlooper"; } | crontab -
+        if ! crontab -l | { cat; echo "* * * * * /usr/local/sbin/vupdate"; } | crontab -
             then
                 echo "Failed to install cronjob to check for new media every minute"
                 exit 1
