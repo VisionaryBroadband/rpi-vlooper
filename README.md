@@ -10,6 +10,7 @@ This is where this repo comes into play. This will install all the necessary fil
 * Display to connect to the raspberry pi (via direct HDMI preferred for audio to work)
 * The following software packages will be installed via the install script:
   * (required) `omxplayer`
+  * (required) `cec-utils`
   * (optional) `cifs-utils`
   * (optional) `nfs-common`
 
