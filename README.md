@@ -25,5 +25,10 @@ This is where this repo comes into play. This will install all the necessary fil
   * Such as, you might sftp or scp the files onto the pi via Filezilla or CLI.
   * You could also plug in removable media and manually the copy the files onto the rasberry pi.
   > The files will need to be put into the `/mnt/tvMedia` folder, and named whatever you chose for the `$newVideo` file name (see /inc/main.cfg)
+* I would recommend that you have properly configured your localization on your Raspberry Pi with `sudo raspi-config` before installing this repo
+  * Set your local timezone
+  * Set your keyboard layout (Ie. Generic 104-Key for US or Generic 105-Key-Intl for Great Britain)
+  * Set your locale to your regions language pack (Ie. en_US or en_GB)
+  * After making these changes, please reboot your Raspberry Pi to ensure all your services have up-to-date information, such as Crontab using the right timezone.
 
 Thank you for using this repository, if you like it feel free to fork it and adapt it to your own needs!

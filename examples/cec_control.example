@@ -1,0 +1,155 @@
+#!/bin/bash
+#source
+
+case "$1" in on)
+    if [[ "$display" = "none" ]]
+        then
+            echo "$timeStamp - No CEC compatible display detected, plese run: cec_control detect" >> "$cecLog"
+            exit 1
+        else
+            if ! echo "on $display" | cec-client -s -d 1 > /dev/null 2>&1
+                then
+                    echo "$timeStamp - Failed to turn on $vendor #$display!" >> "$cecLog"
+                    exit 1
+                else
+                    echo "$timeStamp - Turned on $vendor #$display" >> "$cecLog"
+                    if ! echo "as" | cec-client -s -d 1 > /dev/null 2>&1
+                        then
+                            echo "$timeStamp - Failed to set active source on $vendor #$display" >> "$cecLog"
+                            exit 1
+                        else
+                            echo "$timeStamp - Set active source on $vendor #$display" >> "$cecLog"
+                        exit 0
+                    fi
+            fi
+    fi
+;;
+off)
+    if [[ "$display" = "none" ]]
+        then
+            echo "$timeStamp - No CEC compatible display detected, plese run: cec_control detect" >> "$cecLog"
+            exit 1
+        else
+            if ! echo "standby $display" | cec-client -s -d 1 > /dev/null 2>&1
+                then
+                    echo "$timeStamp - Failed to turn off $vendor #$display!" >> "$cecLog"
+                    exit 1
+                else
+                    echo "$timeStamp - Turned off $vendor #$display" >> "$cecLog"
+                    exit 0
+            fi
+    fi
+;;
+status)
+    if [[ "$display" = "none" ]]
+        then
+            echo "$timeStamp - No CEC compatible display detected, plese run: cec_control detect" >> "$cecLog"
+            exit 1
+        else
+            cecStatus=$(echo "pow $display" | cec-client -s -d 1 | grep power |  awk '{print $3}')
+            cecStatusResult="$cecStatus"
+            if [[ -n $cecStatusResult ]]
+                then
+                    echo "$timeStamp - Power status is $cecStatusResult for $vendor #$display" >> "$cecLog"
+                    exit 0
+                else
+                    echo "$timeStamp - Failed to get power status for $vendor #$display!" >> "$cecLog"
+                    exit 1
+            fi
+    fi
+;;
+volUp)
+    if [[ "$display" = "none" ]]
+        then
+            echo "$timeStamp - No CEC compatible display detected, plese run: cec_control detect" >> "$cecLog"
+            exit 1
+        else
+            if ! echo "volup $display" | cec-client -s -d 1 > /dev/null 2>&1
+                then
+                    echo "$timeStamp - Failed to turn volume up for $vendor #$display!" >> "$cecLog"
+                    exit 1
+                else
+                    echo "$timeStamp - Turned volume up for $vendor #$display" >> "$cecLog"
+                    exit 0
+            fi
+    fi
+;;
+volDown)
+    if [[ "$display" = "none" ]]
+        then
+            echo "$timeStamp - No CEC compatible display detected, plese run: cec_control detect" >> "$cecLog"
+            exit 1
+        else
+            if ! echo "voldown $display" | cec-client -s -d 1 > /dev/null 2>&1
+                then
+                    echo "$timeStamp - Failed to turn volume down for $vendor #$display!" >> "$cecLog"
+                    exit 1
+                else
+                    echo "$timeStamp - Turned volume down for $vendor #$display" >> "$cecLog"
+                    exit 0
+            fi
+    fi
+;;
+mute)
+    if [[ "$display" = "none" ]]
+        then
+            echo "$timeStamp - No CEC compatible display detected, plese run: cec_control detect" >> "$cecLog"
+            exit 1
+        else
+            if ! echo "mute $display" | cec-client -s -d 1 > /dev/null 2>&1
+                then
+                    echo "$timeStamp - Failed to toggle mute for $vendor #$display!" >> "$cecLog"
+                    exit 1
+                else
+                    echo "$timeStamp - Toggled Mute for $vendor #$display" >> "$cecLog"
+                    exit 0
+            fi
+    fi
+;;
+detect)
+    cecScan=$(echo 'scan' | cec-client -s -d 1 | grep device | grep -v Recorder | awk '{print $2}' | cut -d# -f2 | cut -d: -f1)
+    cecScanResult="$cecScan"
+    if [[ -n $cecScanResult ]]
+        then
+            echo "$timeStamp - CEC compatible display detected!" >> "$cecLog"
+            echo "$timeStamp -    Device # is $cecScanResult" >> "$cecLog"
+            if ! sed -i'' -e "s,display=\"$display\",display=\"$cecScanResult\",g" "$baseDir/inc/main.cfg"
+                then
+                    echo "$timeStamp - Failed to update display variable in main.cfg" >> "$cecLog"
+            fi
+            cecScanVen=$(echo 'scan' | cec-client -s -d 1 | grep vendor | grep -v Pulse | awk '{print $2}')
+            cecScanVenResult="$cecScanVen"
+            if [[ -n $cecScanVenResult ]]
+                then
+                    echo "$timeStamp -    Vendor is $cecScanVenResult" >> "$cecLog"
+                    if ! sed -i'' -e "s,vendor=\"$vendor\",vendor=\"$cecScanVenResult\",g" "$baseDir/inc/main.cfg"
+                        then
+                            echo "$timeStamp - Failed to update vendor variable in main.cfg" >> "$cecLog"
+                    fi
+            fi
+        else
+            echo "$timeStamp - No CEC compatible display detected!" >> "$cecLog"
+            if ! sed -i'' -e "s,display=\"$display\",display=\"none\",ig" -e "s,vendor=\"$vendor\",vendor=\"none\",g" "$baseDir/inc/main.cfg"
+                then
+                    echo "$timeStamp - Failed to update display and vendor variables in main.cfg" >> "$cecLog"
+            fi
+            exit 0
+    fi
+;;
+help)
+    echo "Usage: cec_control {on|off|status|volUp|volDown|mute|detect|help}"
+    echo "  on      - Turns on the display"
+    echo "  off     - Turns off the display"
+    echo "  status  - Get power status of the display"
+    echo "  volUp   - send a volume up command to the amp if present"
+    echo "  volDown - send a volume down command to the amp if present"
+    echo "  mute    - send a mute/unmute command to the amp if present"
+    echo "  detect  - scans for compatible CEC Hardware and sets the display ID and vendor ID in the main.cfg file"
+    exit 0
+;;
+*)
+    echo "Usage: cec_control {on|off|status|volUp|volDown|mute|detect|help}"
+    exit 0
+;;
+esac
+exit 0

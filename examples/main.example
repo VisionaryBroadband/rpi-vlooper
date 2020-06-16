@@ -1,6 +1,7 @@
 # Global variables go here
-# This file should be included in vupdate.sh and vlooper.sh
+# This file should be included in vupdate.sh and vlooper.sh and cec_control.sh
 log=/var/log/vlooper.log
+cecLog=/var/log/cec_control.log
 timeStamp=$(date +"%Y-%m-%d %T")
 
 # Installation user
@@ -48,3 +49,11 @@ archName="$timeStamp-$curVideo"
 # OmxPlayer search
 #  - Used to see if omxplayer is running or not
 omxPid=$(pgrep -f "omxplayer.bin")
+
+# cec_control Display id 
+#  - Used to store the Display id of the connected CEC compatible display
+display="none"
+
+# cec_control Vendor name
+#  - Used to store the Vendor name of the connected CEC compatible display
+vendor="none"

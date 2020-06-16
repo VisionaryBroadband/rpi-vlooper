@@ -80,7 +80,7 @@ fi
 
 # Check for dependencies and ask to install them if unmet
 echo "[   ---   ] Checking dependencies..."
-declare -a packages=("omxplayer")
+declare -a packages=("omxplayer" "cec-utils")
 if [[ "$mediaMethod" = "y" ]]
     then
         if [[ "$remoteMethod" = "smb" ]]
@@ -98,6 +98,7 @@ for package in "${packages[@]}"; do
             if [[ "$doInstall" = "y" ]]
                 then
                     echo "[   ---   ] Installing $package..."
+                    echo -e "[  ${CYAN}INFO${NC}   ] This may take a while, please allow 1-3 minutes depending on your internet speed"
                     if [ "$EUID" -ne 0 ]
                         then
                             if ! echo "$sudoPW" | sudo -S -k apt install "$package" -y > /dev/null 2>&1
@@ -124,6 +125,130 @@ for package in "${packages[@]}"; do
 done
 echo -e "[   ${GREEN}OK${NC}    ] Dependencies met! Installing Video Looper now..."
 
+# Check if the user is using a CEC compatible display
+cecScan=$(echo 'scan' | cec-client -s -d 1 | grep device | grep -v Recorder | awk '{print $2}' | cut -d# -f2 | cut -d: -f1)
+cecScanResult="$cecScan"
+if [[ -n $cecScanResult ]]
+    then
+        cecScanVen=$(echo 'scan' | cec-client -s -d 1 | grep vendor | grep -v Pulse | awk '{print $2}')
+        cecScanVenResult="$cecScanVen"
+        read -rp "[  INPUT  ] You are using a CEC compatible display, would you like to schedule when to turn it on/off [y/N]? " cecInput
+        if [[ -n $cecInput ]]
+            then
+                if [[ "$cecInput" = "y" ]]
+                    then
+                        cecDecision="$cecInput"
+                    else
+                        cecDecision="n"
+                fi
+            else
+                cecDecision="n"
+        fi
+    else
+        read -rp "[  INPUT  ] Do you plan on using a CEC compatible display in the future and would you like the ability to schedule when to turn it on/off [y/N]? " cecInput
+        if [[ -n $cecInput ]]
+            then
+                if [[ "$cecInput" = "y" ]]
+                    then
+                        cecDecision="$cecInput"
+                    else
+                        cecDecision="n"
+                fi
+            else
+                cecDecision="n"
+        fi
+fi
+
+# Prompt user to select days to schedule cec_control
+if [[ "$cecDecision" = "y" ]]
+    then
+        echo -e "[  ${CYAN}INFO${NC}   ] Please select which days of the week you would like to turn the display on/off"
+        echo -e "[  ${CYAN}INFO${NC}   ]    [1] Weekdays (Monday - Friday)"
+        echo -e "[  ${CYAN}INFO${NC}   ]    [2] Weekends (Saturday & Sunday)"
+        echo -e "[  ${CYAN}INFO${NC}   ]    [3] Everyday"
+        echo -e "[  ${CYAN}INFO${NC}   ]    [4] Certain days of the week"
+        read -rp "[  INPUT  ] Select one of the above: " daysInput
+        case "$daysInput" in 1)
+            cecDays="1-5"
+        ;;
+        2)
+            cecDays="6,0"
+        ;;
+        3)
+            cecDays="*"
+        ;;
+        4)
+            echo -e "[  ${CYAN}INFO${NC}   ] Please select which days of the week you would like to turn the display on/off"
+            echo -e "[  ${CYAN}INFO${NC}   ]    [0] Sunday"
+            echo -e "[  ${CYAN}INFO${NC}   ]    [1] Monday"
+            echo -e "[  ${CYAN}INFO${NC}   ]    [2] Tuesday"
+            echo -e "[  ${CYAN}INFO${NC}   ]    [3] Wednesday"
+            echo -e "[  ${CYAN}INFO${NC}   ]    [4] Thursday"
+            echo -e "[  ${CYAN}INFO${NC}   ]    [5] Friday"
+            echo -e "[  ${CYAN}INFO${NC}   ]    [6] Saturday"
+            read -rp "[  INPUT  ] Select any of the above, in a comma separated list (Ie. 1 or 1,3,5): " dayInput
+            re="^[0-6]+(,[0-6]+)*$"
+            if [[ "$dayInput" =~ $re ]]
+                then
+                    cecDays="$dayInput"
+                else
+                    echo -e "[ ${YELLOW}WARNING${NC} ] Invalid selection, please manually setup your schedule with: crontab -e"
+                    cecDecision="n"
+            fi
+        ;;
+        *)
+            echo -e "[ ${YELLOW}WARNING${NC} ] Invalid selection, please manually setup your schedule with: crontab -e"
+            cecDecision="n"
+        ;;
+        esac
+fi
+
+# Prompt user to select turn on time to schedule cec_control
+if [[ "$cecDecision" = "y" ]]
+    then
+        read -rp "[  INPUT  ] Please enter the hour you wish to turn on the display in 24hr time (Ie. 8 for 8am or 20 for 8pm): " hourOnInput
+        re="^([0-1]?[0-9]|2[0-3])$"
+        if [[ "$hourOnInput" =~ $re ]]
+            then
+                cecHourOn="$hourOnInput"
+                read -rp "[  INPUT  ] Please enter the minute you wish to turn on the display [0-59]: " minuteOnInput
+                re="(^[1-5][0-9])|(^[0-9])$"
+                if [[ "$minuteOnInput" =~ $re ]]
+                    then
+                        cecMinuteOn="$minuteOnInput"
+                    else
+                        echo -e "[ ${YELLOW}WARNING${NC} ] Invalid selection, please manually setup your schedule with: crontab -e"
+                        cecDecision="n"
+                fi
+            else
+                echo -e "[ ${YELLOW}WARNING${NC} ] Invalid selection, please manually setup your schedule with: crontab -e"
+                cecDecision="n"
+        fi
+fi
+
+# Prompt user to select turn off time to schedule cec_control
+if [[ "$cecDecision" = "y" ]]
+    then
+        read -rp "[  INPUT  ] Please enter the hour you wish to turn off the display in 24hr time (Ie. 8 for 8am or 20 for 8pm): " hourOffInput
+        re="^([0-1]?[0-9]|2[0-3])$"
+        if [[ "$hourOffInput" =~ $re ]]
+            then
+                cecHourOff="$hourOffInput"
+                read -rp "[  INPUT  ] Please enter the minute you wish to turn off the display [0-59]: " minuteOffInput
+                re="(^[1-5][0-9])|(^[0-9])$"
+                if [[ "$minuteOffInput" =~ $re ]]
+                    then
+                        cecMinuteOff="$minuteOffInput"
+                    else
+                        echo -e "[ ${YELLOW}WARNING${NC} ] Invalid selection, please manually setup your schedule with: crontab -e"
+                        cecDecision="n"
+                fi
+            else
+                echo -e "[ ${YELLOW}WARNING${NC} ] Invalid selection, please manually setup your schedule with: crontab -e"
+                cecDecision="n"
+        fi
+fi
+
 # Update the main.cfg file for usage
 echo "[   ---   ] Building configuration file..."
 read -rp "[  INPUT  ] What file name will your new videos be titled [$newFile]? " newFileInput
@@ -141,15 +266,23 @@ if ! sed -i'' -e "s,# fileOwner=,fileOwner=$USER,ig" -e "s,# baseDir=,baseDir=$H
         echo -e "[ ${RED}FAILED${NC}  ] Could not build configuration file, aborting installation!"
         exit 1
 fi
+if [[ -n $cecScanResult ]]
+    then
+        if ! sed -i'' -e "s,display=\"none\",display=\"$cecScanResult\".ig" -e "s,vendor=\"none\",vendor=\"$cecScanVenResult\",g" ./examples/main.example
+            then
+                echo -e "[ ${RED}FAILED${NC}  ] Could not build configuration file, aborting installation!"
+                exit 1
+        fi
+fi
 
 # Update the vlogroate conf file for usage
-if ! sed -i'' -e "s,create 660,create 660 $USER $USER,g" ./examples/vlogrotate.example
+if ! sed -i'' -e "s,create 660,create 660 $USER root,g" ./examples/vlogrotate.example
     then
         echo -e "[ ${RED}FAILED${NC}  ] Could not build vlogroate configuration file, aborting installation!"
         exit 1
 fi
 
-# Update both scripts to specify the full filepath to the main.cfg
+# Update all scripts to specify the full filepath to the main.cfg
 if ! sed -i'' -e "s,#source,source $HOME/vlooper/inc/main.cfg,g" ./examples/vlooper.example
     then
         echo -e "[ ${RED}FAILED${NC}  ] Could not update vlooper script with main.cfg path"
@@ -158,6 +291,11 @@ fi
 if ! sed -i'' -e "s,#source,source $HOME/vlooper/inc/main.cfg,g" ./examples/vupdate.example
     then
         echo -e "[ ${RED}FAILED${NC}  ] Could not update vupdate script with main.cfg path"
+        exit 1
+fi
+if ! sed -i'' -e "s,#source,source $HOME/vlooper/inc/main.cfg,g" ./examples/cec_control.example
+    then
+        echo -e "[ ${RED}FAILED${NC}  ] Could not update cec_control script with main.cfg path"
         exit 1
 fi
 
@@ -292,6 +430,17 @@ if ! cp ./examples/vupdate.example ~/vlooper/vupdate.sh
                 exit 1
         fi
 fi
+if ! cp ./examples/cec_control.example ~/vlooper/cec_control.sh
+    then
+        echo -e "[ ${RED}FAILED${NC}  ] Could not install cec_control script"
+        exit 1
+    else
+        if ! chmod +x ~/vlooper/cec_control.sh
+            then
+                echo -e "[ ${RED}FAILED${NC}  ] Could not make cec_control script executable"
+                exit 1
+        fi
+fi
 if ! cp ./examples/main.example ~/vlooper/inc/main.cfg
     then
         echo -e "[ ${RED}FAILED${NC}  ] Could not install configuration file and make executable"
@@ -343,6 +492,23 @@ if [ "$EUID" -ne 0 ]
                         fi
                 fi
         fi
+        if ! echo "$sudoPW" | sudo -S -k touch /var/log/cec_control.log
+            then
+                echo -e "[ ${RED}FAILED${NC}  ] Could not create /var/log/cec_control.log"
+                exit 1
+            else
+                if ! echo "$sudoPW" | sudo -S -k chown "$USER":root /var/log/cec_control.log
+                    then
+                        echo -e "[ ${RED}FAILED${NC}  ] Could not update ownerships of /var/log/cec_control.log"
+                        exit 1
+                    else
+                        if ! echo "$sudoPW" | sudo -S -k chmod 660 /var/log/cec_control.log
+                            then
+                                echo -e "[ ${RED}FAILED${NC}  ] Could not set permissions of /var/log/cec_control.log"
+                                exit 1
+                        fi
+                fi
+        fi
     else
         if ! cp ./examples/vlooper.example /usr/local/sbin/vlooper.sh
             then
@@ -365,6 +531,11 @@ if [ "$EUID" -ne 0 ]
                 echo -e "[ ${RED}FAILED${NC}  ] Could not create /var/log/vlooper.log"
                 exit 1
         fi
+        if ! touch /var/log/cec_control.log
+            then
+                echo -e "[ ${RED}FAILED${NC}  ] Could not create /var/log/cec_control.log"
+                exit 1
+        fi
 fi
 
 # Make symlink to vupdate script
@@ -376,11 +547,24 @@ if [ "$EUID" -ne 0 ]
             then
                 echo -e "[ ${YELLOW}WARNING${NC} ] --- Could not create vupdate symlink, you can optionally create this if you choose so"
         fi
+        echo "[   ---   ] Creating symbolic link to cec_control script..."
+        echo -e "[  ${CYAN}INFO${NC}   ] You can invoke this script to control your CEC enabled display simply by typing: cec_control help"
+        if ! echo "$sudoPW" | sudo -S -k ln -s "$HOME/vlooper/cec_control.sh" /usr/local/bin/cec_control
+            then
+                echo -e "[ ${YELLOW}WARNING${NC} ] --- Could not create cec_control symlink, you can optionally create this if you choose so"
+        fi
     else
         echo "[   ---   ] Creating symbolic link to vupdate script..."
+        echo -e "[  ${CYAN}INFO${NC}   ] You can invoke this script to force a video update simply by typing: vupdate"
         if ! ln -s ~/vlooper/vupdate.sh /usr/local/sbin/vupdate
             then
                 echo -e "[ ${YELLOW}WARNING${NC} ] --- Failed to create vupdate symlink, you can optionally create this if you choose so"
+        fi
+        echo "[   ---   ] Creating symbolic link to cec_control script..."
+        echo -e "[  ${CYAN}INFO${NC}   ] You can invoke this script to control your CEC enabled display simply by typing: cec_control help"
+        if ! ln -s ~/vlooper/cec_control.sh /usr/local/sbin/cec_control
+            then
+                echo -e "[ ${YELLOW}WARNING${NC} ] --- Failed to create cec_control symlink, you can optionally create this if you choose so"
         fi
 fi
 
@@ -393,11 +577,33 @@ if [ "$EUID" -ne 0 ]
                 echo -e "[ ${RED}FAILED${NC}  ] Could not install cronjob to check for new media every minute"
                 exit 1
         fi
+        if [[ "$cecDecision" = "y" ]]
+            then
+                if ! crontab -l | { cat; echo "$cecMinuteOn $cecHourOn * * $cecDays /usr/local/bin/cec_control on"; } | crontab -
+                    then
+                        echo -e "[ ${YELLOW}WARNING${NC} ] Could not install cronjob to turn on CEC Display"
+                fi
+                if ! crontab -l | { cat; echo "$cecMinuteOff $cecHourOff * * $cecDays /usr/local/bin/cec_control off"; } | crontab -
+                    then
+                        echo -e "[ ${YELLOW}WARNING${NC} ] Could not install cronjob to turn off CEC Display"
+                fi
+        fi
     else
         if ! crontab -l | { cat; echo "* * * * * /usr/local/sbin/vupdate"; } | crontab -
             then
                 echo -e "[ ${RED}FAILED${NC}  ] Could not install cronjob to check for new media every minute"
                 exit 1
+        fi
+        if [[ "$cecDecision" = "y" ]]
+            then
+                if ! crontab -l | { cat; echo "$cecMinuteOn $cecHourOn * * $cecDays /usr/local/sbin/cec_control on"; } | crontab -
+                    then
+                        echo -e "[ ${YELLOW}WARNING${NC} ] Could not install cronjob to turn on CEC Display"
+                fi
+                if ! crontab -l | { cat; echo "$cecMinuteOff $cecHourOff * * $cecDays /usr/local/sbin/cec_control off"; } | crontab -
+                    then
+                        echo -e "[ ${YELLOW}WARNING${NC} ] Could not install cronjob to check to turn off CEC Display"
+                fi
         fi
 fi
 

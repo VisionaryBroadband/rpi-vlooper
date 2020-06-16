@@ -1,4 +1,5 @@
-/var/log/vlooper.log {
+/var/log/vlooper.log 
+/var/log/cec_control.log {
 	weekly
 	missingok
 	create 660
@@ -6,5 +7,4 @@
 	compress
 	delaycompress
 	dateext
-	dateformat %Y-%m-%d-%s
 }
