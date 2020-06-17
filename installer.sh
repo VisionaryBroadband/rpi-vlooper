@@ -313,13 +313,13 @@ if ! mkdir -p ~/vlooper/video
 fi
 if [ "$EUID" -ne 0 ]
     then
-        if ! echo "$sudoPW" | sudo -S -k mkdir -p /mnt/tvMedia 2>&1
+        if ! echo "$sudoPW" | sudo -S -k mkdir -p /mnt/tvMedia > /dev/null 2>&1
             then
                 echo -e "[ ${RED}FAILED${NC}  ] Could not create /mnt/tvMedia for remoteFS mount, aborting installation!"
                 exit 1
         fi
     else
-        if ! mkdir -p /mnt/tvMedia 2>&1
+        if ! mkdir -p /mnt/tvMedia > /dev/null 2>&1
             then
                 echo -e "[ ${RED}FAILED${NC}  ] Could not create /mnt/tvMedia for remoteFS mount, aborting installation!"
                 exit 1
@@ -340,13 +340,13 @@ if [[ "$mediaMethod" = "y" ]]
                         read -rp "[  INPUT  ] What password should be used to connect to the SMB Share? " smbPass
                         read -rp "[  INPUT  ] What domain should be used to connect to the SMB Share (leave blank for none)? " smbDomain
                         # Create the SMB credential file
-                        if ! touch ~/.smbCreds 2>&1
+                        if ! touch ~/.smbCreds > /dev/null 2>&1
                             then
                                 echo -e "[ ${RED}FAILED${NC}  ] Could not create SMB credential file, aborting installation!"
                                 exit 1
                         fi
                         # Setup SMB credential file permissions
-                        if ! chmod 600 ~/.smbCreds 2>&1
+                        if ! chmod 600 ~/.smbCreds > /dev/null 2>&1
                             then
                                 echo -e "[ ${YELLOW}WARNING${NC} ] Could not secure SMB credential file, please secure manually with: chmod 600 ~/.smbCreds"
                         fi
@@ -389,7 +389,7 @@ if [[ "$mediaMethod" = "y" ]]
                 if [[ -n "$nfsUser" ]]
                     then
                         read -rp "[  INPUT  ]What password should be used to connect to the NFS Share? " nfsPass
-                        if ! echo "$sudoPW" | sudo -S -k echo "$nfsShare    /mnt/tvMedia  nfs    username=$nfsUser,password=$nfsPass,rw,noexec,nosuid 0 0" | sudo tee -a /etc/fstab > /dev/null /2>&1
+                        if ! echo "$sudoPW" | sudo -S -k echo "$nfsShare    /mnt/tvMedia  nfs    username=$nfsUser,password=$nfsPass,rw,noexec,nosuid 0 0" | sudo tee -a /etc/fstab > /dev/null 2>&1
                             then
                                 echo -e "[ ${RED}FAILED${NC}  ] Could not add NFS Mount to /etc/fstab"
                                 exit 1
