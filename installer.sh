@@ -443,13 +443,22 @@ if ! cp ./examples/cec_control.example ~/vlooper/cec_control.sh
 fi
 if ! cp ./examples/main.example ~/vlooper/inc/main.cfg
     then
-        echo -e "[ ${RED}FAILED${NC}  ] Could not install configuration file and make executable"
+        echo -e "[ ${RED}FAILED${NC}  ] Could not install configuration file"
         exit 1
     else
         if ! chmod +x ~/vlooper/inc/main.cfg
             then
                 echo -e "[ ${RED}FAILED${NC}  ] Could not make main.cfg script executable"
                 exit 1
+        fi
+fi
+if ! cp ./examples/uninstaller.example ~/vlooper/uninstaller.sh
+    then
+        echo -e "[ ${YELLOW}WARNING${NC} ] Could not install uninstaller file"
+    else
+        if ! chmod +x ~/vlooper/uninstaller.sh
+            then
+                echo -e "[ ${YELLOW}WARNING${NC} ] Could not make uninstaller script executable"
         fi
 fi
 if ! cp ./examples/announcement.mp4 "$HOME/vlooper/video/$playFile"
