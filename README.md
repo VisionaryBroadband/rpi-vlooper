@@ -17,7 +17,7 @@ This is where this repo comes into play. This will install all the necessary fil
 ## Installation instructions
 1. `sudo apt install git -y`
 2. `cd ~`
-3. `git clone git://github.com/captainfodder/rpi-vlooper.git`
+3. `git clone git://github.com/VisionaryBroadband/rpi-vlooper.git`
 4. `cd ~/rpi-vlooper && chmod +x installer.sh`
 5. `./installer.sh`
 
