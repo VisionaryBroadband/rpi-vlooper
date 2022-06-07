@@ -12,9 +12,13 @@ timeStamp=$(date +"%Y-%m-%d %T")
 # - Specify the full filepath to the vlooper folder
 # baseDir=
 
-# Current video
+# Current video file
 # - Specify the name of the currently looped video in the media path that you wish to archive
 curVideo=''
+
+# Full Video filepath
+# - Used to tell what video file omxplayer should use including the filepath
+videoFile="$videoDir/$curVideo"
 
 # Media path
 # - Specify the full filepath to the folder containing the video you wish to have looped

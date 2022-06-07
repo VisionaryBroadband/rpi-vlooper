@@ -1,12 +1,13 @@
 #!/bin/bash
 #source
 
-# Get into the scripts home directory
-cd "$baseDir" || { echo "Failed to cd into $baseDir" >> "$log"; exit 1; }
-
 # Check the Video folder for new media
-cd "$videoDir"
-src=$(ls -t ./*.mp4 | head -n1)
+echo "$timeStamp - Checking for new media" >> "$log"
+cd "$videoDir" || { echo "Failed to cd into $videoDir" >> "$log"; exit 1; }
+readarray -t -d '' files < <(
+  LC_ALL=C find . -maxdepth 1 -type f ! -name '.*' -printf '%T@/%f\0' |
+  sort -rzn | cut -zd/ -f2)
+((${#files[@]} > 0)) && src=$(printf '%s\n' "${files[0]}")
 
 # Check result of src, if not null then process video
 if [[ -n "$src" ]]
@@ -19,13 +20,12 @@ if [[ -n "$src" ]]
         echo "$timeStamp - New file found, initiating video update process..." >> "$log"
         echo "$timeStamp - Currently running video ... $curVideo" >> "$log"
         echo "$timeStamp - New video found ... $src" >> "$log"
-        newFile="\'$videoDir/$src\'"
-        if ! sed -i "s|^curVideo=.*|curVideo=$newFile|" "$baseDir/inc/main.cfg"
+        if ! sed -i "s|^curVideo=.*|curVideo=$src|" "$baseDir/inc/main.cfg"
           then
             echo -e "$timeStamp - Could not update configuration file" >> "$log"
             exit 1
           else
-            echo -e "$timestamp - Configuration file updated successfully" >> "$log"
+            echo -e "$timeStamp - Configuration file updated successfully" >> "$log"
         fi
 
         # Check if omxplayer is running and terminate if it is
