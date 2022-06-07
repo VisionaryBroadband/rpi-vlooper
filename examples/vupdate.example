@@ -2,8 +2,8 @@
 #source
 
 # Check the Video folder for new media
-echo "$timeStamp - Checking for new media" >> "$log"
-cd "$videoDir" || { echo "Failed to cd into $videoDir" >> "$log"; exit 1; }
+echo "$timeStamp [vupdate] Checking for new media" >> "$log"
+cd "$videoDir" || { echo "$timeStamp [vupdate] Failed to cd into $videoDir" >> "$log"; exit 1; }
 readarray -t -d '' files < <(
   LC_ALL=C find . -maxdepth 1 -type f ! -name '.*' -printf '%T@/%f\0' |
   sort -rzn | cut -zd/ -f2)
@@ -15,48 +15,48 @@ if [[ -n "$src" ]]
     # Check if new file is the same as the current file, if not then process video
     if [ "$src" == "$curVideo" ]
       then
-        echo "$timeStamp - No new video found" >> "$log"
+        echo "$timeStamp [vupdate] No new video found" >> "$log"
       else
-        echo "$timeStamp - New file found, initiating video update process..." >> "$log"
-        echo "$timeStamp - Currently running video ... $curVideo" >> "$log"
-        echo "$timeStamp - New video found ... $src" >> "$log"
-        if ! sed -i "s|^curVideo=.*|curVideo=$src|" "$baseDir/inc/main.cfg"
+        echo "$timeStamp [vupdate] New file found, initiating video update process..." >> "$log"
+        echo "$timeStamp [vupdate] Currently running video ... $curVideo" >> "$log"
+        echo "$timeStamp [vupdate] New video found ... $src" >> "$log"
+        if ! sed -i "s|^curVideo=.*|curVideo=\'$src\'|" "$baseDir/inc/main.cfg"
           then
-            echo -e "$timeStamp - Could not update configuration file" >> "$log"
+            echo -e "$timeStamp [vupdate] Could not update configuration file" >> "$log"
             exit 1
           else
-            echo -e "$timeStamp - Configuration file updated successfully" >> "$log"
+            echo -e "$timeStamp [vupdate] Configuration file updated successfully" >> "$log"
         fi
 
         # Check if omxplayer is running and terminate if it is
         if [[ -n $omxPid ]]
         then
-          echo "$timeStamp -- Stopping Video Looper..." >> "$log"
+          echo "$timeStamp [vupdate] Stopping Video Looper..." >> "$log"
           if ! sudo systemctl stop vlooper
             then
-              echo "$timeStamp ---- Failed to stop vlooper!" >> "$log"
+              echo "$timeStamp [vupdate] Failed to stop vlooper!" >> "$log"
               exit 1
             else
-              echo "$timeStamp ---- Stopped vlooper" >> "$log"
+              echo "$timeStamp [vupdate] Stopped vlooper" >> "$log"
           fi
         fi
 
         # Change new file ownership to installed user
         if ! chown "$fileOwner":"$fileOwner" "$videoDir/$src"
           then
-            echo "$timeStamp -- Failed to set ownership of video!" >> "$log"
+            echo "$timeStamp [vupdate] Failed to set ownership of video!" >> "$log"
           else
-            echo "$timeStamp -- Set ownership on video" >> "$log"
+            echo "$timeStamp [vupdate] Set ownership on video" >> "$log"
         fi
 
         #Start videolooper. If success send to log.
         if ! sudo systemctl start vlooper
           then
-            echo "$timeStamp -- Failed to start vlooper!" >> "$log"
+            echo "$timeStamp [vupdate] Failed to start vlooper!" >> "$log"
           else
-            echo "$timeStamp -- Started vlooper" >> "$log"
+            echo "$timeStamp [vupdate] Started vlooper" >> "$log"
         fi
     fi
   else
-    echo "$timeStamp - No new video found" >> "$log"
+    echo "$timeStamp [vupdate] No new video found" >> "$log"
 fi

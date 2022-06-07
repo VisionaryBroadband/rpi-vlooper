@@ -1,20 +1,21 @@
 #!/bin/bash
 #source
 
-echo "$timeStamp - Starting Video Looper Sevice..." >> "$log"
+echo "$timeStamp [vlooper] Starting Video Looper Sevice..." >> "$log"
 if [[ -n $omxPid ]]
     then
-        echo "$timeStamp - Video Playback already running!" >> "$log"
+        echo "$timeStamp [vlooper] Video Playback already running!" >> "$log"
         exit 1
     else
-        if [[ -s $curVideo ]]
+        echo "$timeStamp [vlooper] Checking if $videoFile is missing or empty..." >> "$log"
+        if [ -s $videoFile ]
             then
-                echo "$timeStamp - Loaded video file: $curVideo" >> "$log"
-                echo "$timeStamp - Video Playback Started" >> "$log"
+                echo "$timeStamp [vlooper] Loaded video file: $curVideo" >> "$log"
+                echo "$timeStamp [vlooper] Video Playback Started" >> "$log"
                 omxplayer -o both "$videoFile" -b --loop --no-osd
             else
-                echo "$timeStamp - $curVideo doesn't exist or is zero length, video playback not started!" >> "$log"
-                echo "$timeStamp - Failed to start Video Looper Service!" >> "$log"
+                echo "$timeStamp [vlooper] $curVideo doesn't exist or is zero length, video playback not started!" >> "$log"
+                echo "$timeStamp [vlooper] Failed to start Video Looper Service!" >> "$log"
                 exit 1
         fi
 fi
