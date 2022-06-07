@@ -7,10 +7,6 @@ YELLOW='\033[1;33m' # [ ${YELLOW}WARNING${NC} ]
 CYAN='\033[0;36m'   # [  ${CYAN}INFO${NC}   ]
 NC='\033[0m'        # No Color
 
-# Declare default variables
-newFile="announcements.mp4"
-playFile="announcement.mp4"
-
 # Check if this is being installed as root or not
 if [ "$EUID" -ne 0 ]
     then
@@ -44,17 +40,11 @@ if [ "$distroCheck" != "Raspbian" ]
         echo -e "[ ${RED}FAILED${NC}  ] OS is incompatible, required OS: Raspbian / RaspberryOS"
         exit 1
     else
-        if [[ $versionCheck -lt 10 ]]
+        if [[ $versionCheck -ne 10 ]]
             then
-                echo -e "[ ${YELLOW}WARNING${NC} ] OS Version is less than 10 (Buster), you may encounter incompatibilities"
-                read -rp "[  INPUT  ] Would you like to proceed anyways [y/N]? " osVersion
-                if [ "$osVersion" != "y" ]
-                    then
-                        echo -e "[  ${RED}ABORT${NC}  ] Cancelling installation..."
-                        exit 1
-                    else
-                        echo -e "[   ${GREEN}OK${NC}    ] Proceeding with installation..."
-                fi
+                echo -e "[ ${YELLOW}WARNING${NC} ] OS Version is not 10 (Buster) and is incompatible"
+                echo -e "[  ${RED}ABORT${NC}  ] Cancelling installation..."
+                exit 1
         fi
 fi
 
@@ -69,27 +59,12 @@ if [ "$EUID" -ne 0 ]
         echo "$sudoPW" | sudo -S -k mv ./examples/vlooper-exception /etc/sudoers.d/
 fi
 
-# Prompt user how they want to import their new videos to the vlooper service
-read -rp "[  INPUT  ] Would you like to retrieve your new videos from a remote file share such as SMB or NFS [y/N]? " mediaMethod
-if [[ "$mediaMethod" = "y" ]]
-    then
-        read -rp "[  INPUT  ] Would you like to use SMB or NFS [smb/nfs]? " remoteMethod
-    else
-        echo "[  INPUT  ] In order to play new videos automatically, you will need to upload them into this folder: /mnt/tvMedia"
-fi
+# Notify the user of where import their new videos to the vlooper service
+echo "[  INPUT  ] In order to play new videos automatically, you will need to upload them into this folder: ~/vlooper/videos"
 
 # Check for dependencies and ask to install them if unmet
 echo "[   ---   ] Checking dependencies..."
 declare -a packages=("omxplayer" "cec-utils")
-if [[ "$mediaMethod" = "y" ]]
-    then
-        if [[ "$remoteMethod" = "smb" ]]
-            then
-                packages+=("cifs-utils")
-            else
-                packages+=("nfs-common")
-        fi
-fi
 for package in "${packages[@]}"; do
     pkgInstalled=$(dpkg --get-selections | grep "$package" | awk '{print $1}')
     if [[ -z $pkgInstalled ]]
@@ -160,6 +135,7 @@ if [[ -n $cecScanResult ]]
 fi
 
 # Prompt user to select days to schedule cec_control
+echo -e "[  ${CYAN}INFO${NC}   ] Now building CEC schedule configuration..."
 if [[ "$cecDecision" = "y" ]]
     then
         echo -e "[  ${CYAN}INFO${NC}   ] Please select which days of the week you would like to turn the display on/off"
@@ -204,6 +180,7 @@ if [[ "$cecDecision" = "y" ]]
 fi
 
 # Prompt user to select turn on time to schedule cec_control
+echo -e "[  ${CYAN}INFO${NC}   ] Building startup schedule..."
 if [[ "$cecDecision" = "y" ]]
     then
         read -rp "[  INPUT  ] Please enter the hour you wish to turn on the display in 24hr time (Ie. 8 for 8am or 20 for 8pm): " hourOnInput
@@ -227,6 +204,7 @@ if [[ "$cecDecision" = "y" ]]
 fi
 
 # Prompt user to select turn off time to schedule cec_control
+echo -e "[  ${CYAN}INFO${NC}   ] Building shutdown schedule..."
 if [[ "$cecDecision" = "y" ]]
     then
         read -rp "[  INPUT  ] Please enter the hour you wish to turn off the display in 24hr time (Ie. 8 for 8am or 20 for 8pm): " hourOffInput
@@ -251,24 +229,15 @@ fi
 
 # Update the main.cfg file for usage
 echo "[   ---   ] Building configuration file..."
-read -rp "[  INPUT  ] What file name will your new videos be titled [$newFile]? " newFileInput
-if [[ -n $newFileInput ]]
-    then
-        newFile="$newFileInput"
-fi
-read -rp "[  INPUT  ] What file name will your playing video be titled [$playFile]? " playFileInput
-if [[ -n $playFileInput ]]
-    then
-        playFile="$playFileInput"
-fi
-if ! sed -i'' -e "s,# fileOwner=,fileOwner=$USER,ig" -e "s,# baseDir=,baseDir=$HOME/vlooper,ig" -e "s,newVideo=\"announcements.mp4\",newVideo=\"$newFile\",ig" -e "s,curVideo=\"announcement.mp4\",curVideo=\"$playFile\",g" ./examples/main.example
+
+if ! sed -i'' -e "s,# fileOwner=,fileOwner=$USER,ig" -e "s,# baseDir=,baseDir=$HOME/vlooper,ig" ./examples/main.example
     then
         echo -e "[ ${RED}FAILED${NC}  ] Could not build configuration file, aborting installation!"
         exit 1
 fi
 if [[ -n $cecScanResult ]]
     then
-        if ! sed -i'' -e "s,display=\"none\",display=\"$cecScanResult\".ig" -e "s,vendor=\"none\",vendor=\"$cecScanVenResult\",g" ./examples/main.example
+        if ! sed -i'' -e "s,display=\"none\",display=\"$cecScanResult\",ig" -e "s,vendor=\"none\",vendor=\"$cecScanVenResult\",g" ./examples/main.example
             then
                 echo -e "[ ${RED}FAILED${NC}  ] Could not build configuration file, aborting installation!"
                 exit 1
@@ -283,6 +252,7 @@ if ! sed -i'' -e "s,create 660,create 660 $USER root,g" ./examples/vlogrotate.ex
 fi
 
 # Update all scripts to specify the full filepath to the main.cfg
+echo -e "[  ${CYAN}INFO${NC}   ] Updating full filepath for all scripts..."
 if ! sed -i'' -e "s,#source,source $HOME/vlooper/inc/main.cfg,g" ./examples/vlooper.example
     then
         echo -e "[ ${RED}FAILED${NC}  ] Could not update vlooper script with main.cfg path"
@@ -310,111 +280,6 @@ if ! mkdir -p ~/vlooper/video
     then
         echo -e "[ ${RED}FAILED${NC}  ] Could not create directories"
         exit 1
-fi
-if [ "$EUID" -ne 0 ]
-    then
-        if ! echo "$sudoPW" | sudo -S -k mkdir -p /mnt/tvMedia > /dev/null 2>&1
-            then
-                echo -e "[ ${RED}FAILED${NC}  ] Could not create /mnt/tvMedia for remoteFS mount, aborting installation!"
-                exit 1
-        fi
-    else
-        if ! mkdir -p /mnt/tvMedia > /dev/null 2>&1
-            then
-                echo -e "[ ${RED}FAILED${NC}  ] Could not create /mnt/tvMedia for remoteFS mount, aborting installation!"
-                exit 1
-        fi
-fi
-
-# Setup the users desired remote media method
-# Check if the user wants to connect to a remote FS such as SMB or NFS
-if [[ "$mediaMethod" = "y" ]]
-    then
-        # Check if the user wants to use SMB or NFS
-        if [[ "$remoteMethod" = "smb" ]]
-            then
-                read -rp "[  INPUT  ] What is the filepath for the SMB share you wish to mount (Ex. //192.168.0.1/TvMedia)? " smbShare
-                read -rp "[  INPUT  ] What username should be used to connect to the SMB Share (leave blank for none)? " smbUser
-                if [[ -n "$smbUser" ]]
-                    then
-                        read -rp "[  INPUT  ] What password should be used to connect to the SMB Share? " smbPass
-                        read -rp "[  INPUT  ] What domain should be used to connect to the SMB Share (leave blank for none)? " smbDomain
-                        # Create the SMB credential file
-                        if ! touch ~/.smbCreds > /dev/null 2>&1
-                            then
-                                echo -e "[ ${RED}FAILED${NC}  ] Could not create SMB credential file, aborting installation!"
-                                exit 1
-                        fi
-                        # Setup SMB credential file permissions
-                        if ! chmod 600 ~/.smbCreds > /dev/null 2>&1
-                            then
-                                echo -e "[ ${YELLOW}WARNING${NC} ] Could not secure SMB credential file, please secure manually with: chmod 600 ~/.smbCreds"
-                        fi
-                        # Setup the SMB credential file
-                        if ! echo "user=$smbUser" >> ~/.smbCreds
-                            then
-                                echo -e "[ ${YELLOW}WARNING${NC} ] Could not set SMB User, please manually set 'user=$smbUser' with: nano ~/.smbCreds"
-                        fi
-                        if ! echo "password=$smbPass" >> ~/.smbCreds
-                            then
-                                echo -e "[ ${YELLOW}WARNING${NC} ] Could not set SMB Password, please manually set 'password=$smbPass' with: nano ~/.smbCreds"
-                        fi
-                        if [[ -n "$smbDomain" ]]
-                            then
-                                if ! echo "domain=$smbDomain" >> ~/.smbCreds
-                                    then
-                                        echo -e "[ ${YELLOW}WARNING${NC} ] Could not set SMB Domain, please manually set 'domain=$smbDomain' with: nano ~/.smbCreds"
-                                fi
-                        fi
-                fi
-                # Setup the SMB connection
-                if [[ -n "$smbUser" ]]
-                    then
-                        if ! echo "$sudoPW" | sudo -S -k echo "$smbShare    /mnt/tvMedia  cifs    uid=$USER,gid=$USER,credentials=$HOME/.smbCreds,iocharset=utf8,rw 0 0" | sudo tee -a /etc/fstab > /dev/null 2>&1
-                            then
-                                echo -e "[ ${RED}FAILED${NC}  ] Could not add SMB Mount to /etc/fstab"
-                                exit 1
-                        fi
-                    else
-                        if ! echo "$sudoPW" | sudo -S -k echo "$smbShare    /mnt/tvMedia  cifs    uid=$USER,gid=$USER,iocharset=utf8,rw 0 0" | sudo tee -a /etc/fstab > /dev/null 2>&1
-                            then
-                                echo -e "[ ${RED}FAILED${NC}  ] Could not add SMB Mount to /etc/fstab"
-                                exit 1
-                        fi
-                fi
-            else
-                # Setup the NFS connection
-                read -rp "[  INPUT  ] What is the filepath for the NFS share you wish to mount (Ex. 192.168.0.1:/TvMedia)? " nfsShare
-                read -rp "[  INPUT  ] What username should be used to connect to the NFS Share (leave blank for none)? " nfsUser
-                if [[ -n "$nfsUser" ]]
-                    then
-                        read -rp "[  INPUT  ]What password should be used to connect to the NFS Share? " nfsPass
-                        if ! echo "$sudoPW" | sudo -S -k echo "$nfsShare    /mnt/tvMedia  nfs    username=$nfsUser,password=$nfsPass,rw,noexec,nosuid 0 0" | sudo tee -a /etc/fstab > /dev/null 2>&1
-                            then
-                                echo -e "[ ${RED}FAILED${NC}  ] Could not add NFS Mount to /etc/fstab"
-                                exit 1
-                        fi
-                    else
-                        if ! echo "$sudoPW" | sudo -S -k echo "$nfsShare    /mnt/tvMedia  nfs    rw,noexec,nosuid 0 0" | sudo tee -a /etc/fstab > /dev/null 2>&1
-                            then
-                                echo -e "[ ${RED}FAILED${NC}  ] Could not add NFS Mount to /etc/fstab"
-                                exit 1
-                        fi
-                fi
-        fi
-        # Mount the remote file share
-        if ! echo "$sudoPW" | sudo -S -k mount -a
-            then
-                echo -e "[ ${RED}FAILED${NC}  ] Could not mount the remote file share, please check /etc/fstab for errors!"
-                exit 1
-        fi
-    else
-        # Update main.cfg to comment network var, and set it to true to pass future checks.
-        if ! sed -i'' -e "s,#smbResult=\"true\",smbResult=\"true\",ig" -e "s,smbResult=\$(,#smbResult=\$(,g" ./examples/main.example
-            then
-                echo -e "[ ${RED}FAILED${NC}  ] Could not update main.cfg with network parameters, aborting installation!"
-                exit 1
-        fi
 fi
 
 # Install the files into those directories
@@ -461,7 +326,7 @@ if ! cp ./examples/uninstaller.example ~/vlooper/uninstaller.sh
                 echo -e "[ ${YELLOW}WARNING${NC} ] Could not make uninstaller script executable"
         fi
 fi
-if ! cp ./examples/announcement.mp4 "$HOME/vlooper/video/$playFile"
+if ! cp ./examples/test.mp4 "$HOME/vlooper/"
     then
         echo -e "[ ${RED}FAILED${NC}  ] Could not install demo video file"
         exit 1

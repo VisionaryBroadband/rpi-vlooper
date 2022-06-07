@@ -7,13 +7,13 @@ if [[ -n $omxPid ]]
         echo "$timeStamp - Video Playback already running!" >> "$log"
         exit 1
     else
-        if [[ -s $videoFile ]]
+        if [[ -s $curVideo ]]
             then
-                echo "$timeStamp --- Loaded video file: $videoFile" >> "$log"
+                echo "$timeStamp - Loaded video file: $curVideo" >> "$log"
                 echo "$timeStamp - Video Playback Started" >> "$log"
-                omxplayer -o both "$videoFile" -b --loop --no-osd
+                omxplayer -o both "$curVideo" -b --loop --no-osd
             else
-                echo "$timeStamp --- $videoFile doesn't exist or is zero length, video playback not started!" >> "$log"
+                echo "$timeStamp - $curVideo doesn't exist or is zero length, video playback not started!" >> "$log"
                 echo "$timeStamp - Failed to start Video Looper Service!" >> "$log"
                 exit 1
         fi

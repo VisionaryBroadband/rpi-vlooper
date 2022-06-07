@@ -1,82 +1,61 @@
 #!/bin/bash
 #source
 
-# Check SMB Mount to Fileserver
-if [[ -z $smbResult ]]
-  then
-    echo "$timeStamp - SMB/NFS not mounted, not checking for new files..." >> "$log"
-    exit 1
-fi
-
 # Get into the scripts home directory
 cd "$baseDir" || { echo "Failed to cd into $baseDir" >> "$log"; exit 1; }
 
-# Check the SMB remote folder for video(s)
-src=$(find "$remoteDir" -maxdepth 1 -type f -name "$newVideo")
+# Check the Video folder for new media
+cd "$videoDir"
+src=$(ls -t ./*.mp4 | head -n1)
 
 # Check result of src, if not null then process video
 if [[ -n "$src" ]]
   then
-    echo "$timeStamp - New file found, initiating video update process..." >> "$log"
-
-    # Move new file from $remoteDir to $videoDir
-    if ! mv -f "$src" "$videoDir"
+    # Check if new file is the same as the current file, if not then process video
+    if [ "$src" == "$curVideo" ]
       then
-        echo "-- failed to move %s" "$src to $videoDir" >> "$log"
-        exit 1
+        echo "$timeStamp - No new video found" >> "$log"
       else
-        echo "-- %s" "$src moved to $videoDir" >> "$log"
-    fi
+        echo "$timeStamp - New file found, initiating video update process..." >> "$log"
+        echo "$timeStamp - Currently running video ... $curVideo" >> "$log"
+        echo "$timeStamp - New video found ... $src" >> "$log"
+        newFile="\'$videoDir/$src\'"
+        if ! sed -i "s|^curVideo=.*|curVideo=$newFile|" "$baseDir/inc/main.cfg"
+          then
+            echo -e "$timeStamp - Could not update configuration file" >> "$log"
+            exit 1
+          else
+            echo -e "$timestamp - Configuration file updated successfully" >> "$log"
+        fi
 
-    # Check if omxplayer is running and terminate if it is
-    if [[ -n $omxPid ]]
-    then
-      echo "-- Stopping Video Looper..." >> "$log"
-      if ! sudo systemctl stop vlooper
+        # Check if omxplayer is running and terminate if it is
+        if [[ -n $omxPid ]]
         then
-          echo "---- Failed to stop vlooper!" >> "$log"
-          exit 1
-        else
-          echo "---- Stopped vlooper" >> "$log"
-      fi
-    fi
+          echo "$timeStamp -- Stopping Video Looper..." >> "$log"
+          if ! sudo systemctl stop vlooper
+            then
+              echo "$timeStamp ---- Failed to stop vlooper!" >> "$log"
+              exit 1
+            else
+              echo "$timeStamp ---- Stopped vlooper" >> "$log"
+          fi
+        fi
 
-    # Move current playing video and send to $archiveDir
-    if ! mv -f "$videoDir/$curVideo" "$archiveDir"
-      then
-        echo "-- Failed to archive current video!" >> "$log"
-      else
-        echo "-- Current video archived" >> "$log"
-    fi
-    if ! mv -f "$archiveDir/$curVideo" "$archiveDir/$archName"
-      then
-        echo "-- Failed to timstamp archive video!" >> "$log"
-      else
-        echo "-- Archive timestamped" >> "$log"
-    fi
+        # Change new file ownership to installed user
+        if ! chown "$fileOwner":"$fileOwner" "$videoDir/$src"
+          then
+            echo "$timeStamp -- Failed to set ownership of video!" >> "$log"
+          else
+            echo "$timeStamp -- Set ownership on video" >> "$log"
+        fi
 
-    # Rename (load/queue) new video
-    if ! mv -f "$videoDir/$newVideo" "$videoDir/$curVideo"
-      then
-        echo "-- Failed to load new video!" >> "$log"
-      else
-        echo "-- Loaded new video" >> "$log"
-    fi
-
-    # Change new file ownership to installed user
-    if ! chown "$fileOwner":"$fileOwner" "$videoFile"
-      then
-        echo "-- Failed to set ownership of video!" >> "$log"
-      else
-        echo "-- Set ownership on video" >> "$log"
-    fi
-
-    #Start videolooper. If success send to log.
-    if ! sudo systemctl start vlooper
-      then
-        echo "-- Failed to start vlooper!" >> "$log"
-      else
-        echo "-- Started vlooper" >> "$log"
+        #Start videolooper. If success send to log.
+        if ! sudo systemctl start vlooper
+          then
+            echo "$timeStamp -- Failed to start vlooper!" >> "$log"
+          else
+            echo "$timeStamp -- Started vlooper" >> "$log"
+        fi
     fi
   else
     echo "$timeStamp - No new video found" >> "$log"

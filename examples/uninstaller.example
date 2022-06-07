@@ -13,7 +13,7 @@ scriptErrs=0
 # Issue warning and ask user if they still wish to uninstall the vlooper service
 echo -e "[ ${YELLOW}WARNING${NC} ] This script will completely remove the vlooper service"
 read -rp "[  INPUT  ] Are you sure you wish to uninstall vlooper and it's related data [y/N]? " userInput
-if [[ -n "$userInput" ]]
+if [[ -z "$userInput" ]]
     then
         exit 0
     else
@@ -25,7 +25,7 @@ if [[ -n "$userInput" ]]
         fi
 fi
 
-# Check if this is being installed as root or not
+# Check if this is being uninstalled as root or not
 if [ "$EUID" -ne 0 ]
     then
         # Set HISTIGNORE to ignore piped-password-sudo commands to protect the sudo password from being stored in plaintext in logs
@@ -122,22 +122,6 @@ if [ "$EUID" -ne 0 ]
             else
                 echo -e "[   ${GREEN}OK${NC}    ] Uninstalled sudoers exemption in /etc/sudoers.d/vlooper-exception"
         fi
-
-        # Uninstall the SMB/NFS mount from /etc/fstab
-        if ! echo "$sudoPW" | sudo -S -k cat /etc/fstab | grep -v '/mnt/tvMedia' | sudo tee /etc/fstab > /dev/null
-            then
-                echo -e "[ ${RED}FAILED${NC}  ] Could not clear network mount from /etc/fstab"
-                exit 1
-            else
-                echo -e "[   ${GREEN}OK${NC}    ] Uninstalled network mount from /etc/fstab"
-                if ! echo "$sudoPW" | sudo -S -k umount /mnt/tvMedia
-                    then
-                        echo -e "[ ${RED}FAILED${NC}  ] Could not unmount /etc/tvMedia"
-                        exit 1
-                    else
-                        echo -e "[   ${GREEN}OK${NC}    ] Unmounted network mount /mnt/tvMedia"
-                fi
-        fi
     else
         # Stop, Disable, Uninstall the vlooper service
         if ! systemctl stop vlooper
@@ -160,7 +144,7 @@ if [ "$EUID" -ne 0 ]
                 fi
         fi
 
-        # Remove symlinks from /usr/local/bin/
+        # Remove symlinks from /usr/local/sbin/
         if ! rm /usr/local/sbin/vlooper.sh
             then
                 echo -e "[ ${YELLOW}WARNING${NC} ] Could not uninstall /usr/local/sbin/vlooper.sh"
@@ -216,22 +200,6 @@ if [ "$EUID" -ne 0 ]
             else
                 echo -e "[   ${GREEN}OK${NC}    ] Uninstalled sudoers exemption in /etc/sudoers.d/vlooper-exception"
         fi
-
-        # Uninstall the SMB/NFS mount from /etc/fstab
-        if ! grep -v '/mnt/tvMedia' /etc/fstab | tee /etc/fstab > /dev/null
-            then
-                echo -e "[ ${RED}FAILED${NC}  ] Could not clear network mount from /etc/fstab"
-                exit 1
-            else
-                echo -e "[   ${GREEN}OK${NC}    ] Uninstalled network mount from /etc/fstab"
-                    if ! umount /mnt/tvMedia
-                    then
-                        echo -e "[ ${RED}FAILED${NC}  ] Could not unmount /etc/tvMedia"
-                        exit 1
-                    else
-                        echo -e "[   ${GREEN}OK${NC}    ] Unmounted network mount /mnt/tvMedia"
-                fi
-        fi
 fi
 
 # Remove github vlooper files
@@ -240,14 +208,6 @@ if ! rm -rf "$HOME/rpi-vlooper/"
         echo -e "[  ${CYAN}INFO${NC}   ] Could not uninstall vlooper files in $HOME/rpi-vlooper/, however they may have been deleted in the past by a user"
     else
         echo -e "[   ${GREEN}OK${NC}    ] Uninstalled vlooper files in $HOME/rpi-vlooper/"
-fi
-
-# Remove SMB Credential file
-if ! rm -rf "$HOME/.smbCreds"
-    then
-        echo -e "[  ${CYAN}INFO${NC}   ] Could not uninstall SMB Credential file, it may not have existed originally"
-    else
-        echo -e "[   ${GREEN}OK${NC}    ] Uninstalled $HOME/.smbCreds"
 fi
 
 # Check if any warnings were encountered and display a different result if so
