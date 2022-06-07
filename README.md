@@ -12,11 +12,12 @@ This is where this repo comes into play. This will install all the necessary fil
   * (required) `omxplayer`
   * (required) `cec-utils`
 
-## Installation instructions via Git CLI ([installation instructions here](https://github.com/cli/cli/blob/trunk/docs/install_linux.md))
-1. `cd ~`
-2. `gh repo clone VisionaryBroadband/rpi-vlooper`
-3. `cd ~/rpi-vlooper && chmod +x installer.sh`
-4. `./installer.sh`
+## Installation instructions
+1. `sudo apt install git -y`
+2. `cd ~`
+3. `git clone https://github.com/VisionaryBroadband/rpi-vlooper.git`
+4. `cd ~/rpi-vlooper && chmod +x installer.sh`
+5. `./installer.sh`
 
 ## Other notes
 * Users will need to manually setup your method of uploading videos to your rasberry pi.
