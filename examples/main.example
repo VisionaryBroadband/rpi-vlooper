@@ -16,13 +16,13 @@ timeStamp=$(date +"%Y-%m-%d %T")
 # - Specify the name of the currently looped video in the media path that you wish to archive
 curVideo=''
 
-# Full Video filepath
-# - Used to tell what video file omxplayer should use including the filepath
-videoFile="$videoDir/$curVideo"
-
 # Media path
 # - Specify the full filepath to the folder containing the video you wish to have looped
 videoDir="$baseDir/video"
+
+# Media path with video file
+# - Used to tell what video file omxplayer should use including the filepath
+videoFile="$videoDir/$curVideo"
 
 # OmxPlayer search
 #  - Used to see if omxplayer is running or not
